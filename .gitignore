@@ -7,10 +7,9 @@ node_modules
 
 # Local env files
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
+!.env.*.example
 
 # Testing
 coverage
@@ -30,8 +29,13 @@ dist
 
 # Debug
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# TypeScript / tooling caches
+*.tsbuildinfo
+.eslintcache
 
 # Misc
 .DS_Store
