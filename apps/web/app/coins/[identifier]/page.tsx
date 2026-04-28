@@ -14,7 +14,6 @@ import {
   Settings,
   Shield,
   Sparkles,
-  Star,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
@@ -139,6 +138,42 @@ const formatChartDate = (value: string) => {
   });
 };
 
+const maxDetailChartPoints = 180;
+
+const downsampleChartPoints = <T,>(
+  points: T[],
+  maxPoints = maxDetailChartPoints,
+) => {
+  if (points.length <= maxPoints) {
+    return points;
+  }
+
+  return Array.from({ length: maxPoints }, (_, index) => {
+    const sourceIndex = Math.round(
+      (index / (maxPoints - 1)) * (points.length - 1),
+    );
+
+    return points[sourceIndex] as T;
+  });
+};
+
+const getSeriesChange = (points: Array<{ value: number }>) => {
+  const first = points.at(0)?.value;
+  const last = points.at(-1)?.value;
+
+  if (
+    first === undefined ||
+    last === undefined ||
+    !Number.isFinite(first) ||
+    !Number.isFinite(last) ||
+    first <= 0
+  ) {
+    return null;
+  }
+
+  return ((last - first) / first) * 100;
+};
+
 const buildChartSeries = (coin: BagsCoinDetailData) => {
   const pricePoints = coin.marketHistory
     .filter((snapshot) => snapshot.price !== null)
@@ -148,11 +183,17 @@ const buildChartSeries = (coin: BagsCoinDetailData) => {
     }));
 
   if (pricePoints.length >= 2) {
+    const points = downsampleChartPoints(pricePoints);
+    const change = getSeriesChange(points);
+
     return {
       title: "Price",
-      points: pricePoints,
+      sourceLabel: "Cached price snapshots",
+      points,
       formatValue: formatPrice,
-      negative: pricePoints.at(-1)!.value < pricePoints[0]!.value,
+      negative: points.at(-1)!.value < points[0]!.value,
+      sparse: pricePoints.length < 24,
+      changeLabel: change === null ? "-" : formatPercent(change),
     };
   }
 
@@ -165,7 +206,7 @@ const buildChartSeries = (coin: BagsCoinDetailData) => {
 
   const points =
     signalPoints.length >= 2
-      ? signalPoints
+      ? downsampleChartPoints(signalPoints)
       : [
           { label: "Current", value: coin.marketSignal.value },
           { label: "Latest", value: coin.marketSignal.value },
@@ -173,10 +214,13 @@ const buildChartSeries = (coin: BagsCoinDetailData) => {
 
   return {
     title: "Bags Signal",
+    sourceLabel: "Price history pending",
     points,
     formatValue: (value?: number | null) =>
       value === null || value === undefined ? "-" : value.toFixed(1),
     negative: false,
+    sparse: true,
+    changeLabel: "-",
   };
 };
 
@@ -429,10 +473,6 @@ function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
           value={<ChangeText value={coin.market.change1h} />}
         />
         <StatRow
-          label="6h"
-          value={<ChangeText value={coin.market.change6h} />}
-        />
-        <StatRow
           label="24h"
           value={<ChangeText value={coin.market.change24h} />}
         />
@@ -500,14 +540,18 @@ function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
 function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
   const series = buildChartSeries(coin);
   const points = series.points.map((point) => point.value);
-  const width = 900;
-  const height = 380;
+  const width = 980;
+  const height = 420;
+  const plotTop = 18;
+  const plotHeight = 330;
+  const plotBottom = plotTop + plotHeight;
   const min = Math.min(...points);
   const max = Math.max(...points);
-  const span = Math.max(max - min, 1);
+  const span = Math.max(max - min, Number.EPSILON);
+  const stroke = series.negative ? "#ff3b30" : "#22c55e";
   const coordinates = points.map((point, index) => {
-    const x = (index / (points.length - 1)) * width;
-    const y = height - ((point - min) / span) * (height - 34) - 16;
+    const x = (index / Math.max(points.length - 1, 1)) * width;
+    const y = plotBottom - ((point - min) / span) * plotHeight;
 
     return [x, y] as const;
   });
@@ -517,8 +561,7 @@ function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
         `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`,
     )
     .join(" ");
-  const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
-  const negative = series.negative;
+  const areaPath = `${linePath} L ${width} ${plotBottom} L 0 ${plotBottom} Z`;
   const labelIndexes = [
     ...new Set([
       0,
@@ -526,6 +569,13 @@ function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
       series.points.length - 1,
     ]),
   ];
+  const gridLines = Array.from({ length: 5 }, (_, index) => {
+    const value = max - (span / 4) * index;
+    const y = plotTop + (plotHeight / 4) * index;
+
+    return { value, y };
+  });
+  const currentValue = points.at(-1);
 
   return (
     <section className="min-w-0 px-6 py-8 lg:px-7">
@@ -557,44 +607,74 @@ function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button className="h-9 gap-2 border-[#2a2a2a] bg-[#111827] text-zinc-100 hover:bg-[#182233]">
-            {series.title}
-            <ChartCandlestick className="size-4" />
-          </Button>
-          <Badge className="h-9 rounded-md border-[#2a2a2a] bg-transparent px-3 text-slate-300">
-            Latest snapshots
-          </Badge>
+          {["1H", "24H", "7D", "30D", "1Y"].map((item) => (
+            <button
+              className={
+                item === "7D"
+                  ? "h-8 rounded-md bg-white px-3 text-xs font-bold text-black"
+                  : "h-8 cursor-not-allowed rounded-md px-3 text-xs font-bold text-slate-500"
+              }
+              disabled={item !== "7D"}
+              key={item}
+              title={item === "7D" ? undefined : "Timeframe not available yet"}
+              type="button"
+            >
+              {item}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="mt-8 min-h-[440px]">
-        <svg
-          aria-label={`${coin.token.name} ${series.title.toLowerCase()} chart`}
-          className="h-auto w-full overflow-visible"
-          role="img"
-          viewBox={`0 0 ${width} ${height + 86}`}
-        >
-          <defs>
-            <linearGradient id="coin-chart-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop
-                offset="0%"
-                stopColor={negative ? "#ef4444" : "#22c55e"}
-                stopOpacity="0.26"
-              />
-              <stop
-                offset="100%"
-                stopColor={negative ? "#ef4444" : "#22c55e"}
-                stopOpacity="0"
-              />
-            </linearGradient>
-          </defs>
-          {[0, 1, 2, 3, 4, 5].map((line) => {
-            const y = 22 + line * 62;
+      <div className="mt-8 overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#030303]">
+        <div className="grid gap-px border-b border-[#1a1a1a] bg-[#1a1a1a] md:grid-cols-4">
+          {[
+            ["Current", series.formatValue(currentValue)],
+            ["7d change", series.changeLabel],
+            ["Market cap", formatMarketCap(coin.market.marketCap)],
+            ["Snapshots", `${coin.marketHistory.length}`],
+          ].map(([label, value]) => (
+            <div className="bg-[#050505] px-4 py-3" key={label}>
+              <p className="text-xs font-semibold uppercase text-slate-500">
+                {label}
+              </p>
+              <p className="mt-1 font-mono text-sm font-semibold text-zinc-100">
+                {value}
+              </p>
+            </div>
+          ))}
+        </div>
 
-            return (
-              <g key={line}>
+        <div className="flex flex-col gap-2 px-4 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-base font-bold text-white">
+              <ChartCandlestick className="size-4 text-zinc-300" />
+              {coin.token.symbol || coin.token.name} {series.title}
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">{series.sourceLabel}</p>
+          </div>
+          <Badge className="w-fit rounded-md border-[#2a2a2a] bg-transparent px-3 text-slate-300">
+            7 day window
+          </Badge>
+        </div>
+
+        <div className="px-3 pb-4 pt-2">
+          <svg
+            aria-label={`${coin.token.name} ${series.title.toLowerCase()} chart`}
+            className="h-auto w-full"
+            role="img"
+            viewBox={`0 0 ${width} ${height}`}
+          >
+            <defs>
+              <linearGradient id="coin-chart-fill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
+                <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {gridLines.map(({ value, y }) => (
+              <g key={y}>
                 <line
                   stroke="#1f2937"
+                  strokeDasharray="3 6"
                   strokeWidth="1"
                   x1="0"
                   x2={width}
@@ -602,82 +682,61 @@ function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
                   y2={y}
                 />
                 <text
-                  fill="#94a3b8"
+                  fill="#64748b"
                   fontSize="12"
                   textAnchor="end"
-                  x={width - 4}
-                  y={y - 6}
+                  x={width - 6}
+                  y={y - 7}
                 >
-                  {series.formatValue(max - (span / 5) * line)}
+                  {series.formatValue(value)}
                 </text>
               </g>
-            );
-          })}
-          <path d={areaPath} fill="url(#coin-chart-fill)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke={negative ? "#ef4444" : "#22c55e"}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="3"
-          />
-          {coordinates
-            .filter((_, index) => labelIndexes.includes(index))
-            .map(([x, y], index) => (
-              <g key={`${x}-${index}`}>
-                <circle
-                  cx={x}
-                  cy={y}
-                  fill="#fde047"
-                  r="9"
-                  stroke="#000000"
-                  strokeWidth="3"
-                />
-                <Star
-                  aria-hidden="true"
-                  className="fill-black text-black"
-                  size={8}
-                  x={x - 4}
-                  y={y - 4}
-                />
-              </g>
             ))}
-          {points.map((point, index) => {
-            const barHeight = 18 + ((point - min) / span) * 42;
-            const x = index * (width / points.length);
-
-            return (
-              <rect
-                fill="#1e293b"
-                height={barHeight}
-                key={`${point}-${index}`}
-                opacity="0.72"
-                width="3"
-                x={x}
-                y={height + 18 - barHeight / 2}
+            <path d={areaPath} fill="url(#coin-chart-fill)" />
+            <path
+              d={linePath}
+              fill="none"
+              stroke={stroke}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2.4"
+            />
+            {coordinates.length > 0 ? (
+              <circle
+                cx={coordinates.at(-1)?.[0]}
+                cy={coordinates.at(-1)?.[1]}
+                fill={stroke}
+                r="4"
+                stroke="#030303"
+                strokeWidth="2"
               />
-            );
-          })}
-          {labelIndexes.map((pointIndex) => (
-            <text
-              fill="#94a3b8"
-              fontSize="12"
-              key={series.points[pointIndex]?.label ?? pointIndex}
-              textAnchor="middle"
-              x={(pointIndex / Math.max(series.points.length - 1, 1)) * width}
-              y={height + 76}
-            >
-              {series.points[pointIndex]?.label}
-            </text>
-          ))}
-        </svg>
-        {series.title !== "Price" ? (
-          <p className="mt-3 text-xs text-slate-500">
-            Price history is shown after multiple cached price snapshots are
-            available. This view currently shows the derived Bags signal.
-          </p>
-        ) : null}
+            ) : null}
+            {labelIndexes.map((pointIndex) => (
+              <text
+                fill="#64748b"
+                fontSize="12"
+                key={series.points[pointIndex]?.label ?? pointIndex}
+                textAnchor={
+                  pointIndex === 0
+                    ? "start"
+                    : pointIndex === series.points.length - 1
+                      ? "end"
+                      : "middle"
+                }
+                x={(pointIndex / Math.max(series.points.length - 1, 1)) * width}
+                y={height - 14}
+              >
+                {series.points[pointIndex]?.label}
+              </text>
+            ))}
+          </svg>
+          {series.sparse ? (
+            <p className="border-t border-[#1a1a1a] px-1 pt-3 text-xs text-slate-500">
+              Collecting more cached price snapshots. The chart will become
+              denser as scheduled syncs write additional market history.
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <section className="mt-7 border-t border-[#1a1a1a] pt-6">
