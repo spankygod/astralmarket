@@ -20,6 +20,11 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "AstralMarket",
   description: "Bags-native token intelligence and market data.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
