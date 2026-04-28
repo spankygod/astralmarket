@@ -2,7 +2,7 @@
 
 Astralmarket is a market-intelligence product for the Bags.fm ecosystem.
 
-Live product: [astralmarkets.xyz](https://astralmarkets.xyz)
+Live product: [astralmarket.xyz](https://www.astralmarket.xyz/)
 
 It turns Bags launch, pool, and migration activity into a familiar market dashboard: ranked tokens, price movement, market capitalization, 7-day chart context, creator metadata, and token-level intelligence built around Bags-native mechanics.
 
