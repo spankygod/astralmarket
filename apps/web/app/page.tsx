@@ -16,13 +16,13 @@ import {
   Shield,
   Sparkles,
   Star,
-  Trophy,
   type LucideIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { HomepageHighlights } from "@/components/homepage-highlights";
+import { LatestNewsGallery } from "@/components/latest-news-gallery";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,7 +65,9 @@ type BagsTableRow = {
   price: string;
   h1: string;
   h24: string;
+  d7: string;
   marketCap: string;
+  volume24h: string;
   tokenMint: string;
   sparkline: number[];
   positive: boolean;
@@ -103,6 +105,8 @@ const leaderboardColumns = [
   { label: "Price", className: "w-40 px-3 text-center" },
   { label: "1h", className: "w-24 px-3 text-center" },
   { label: "24h", className: "w-24 px-3 text-center" },
+  { label: "7d", className: "w-24 px-3 text-center" },
+  { label: "24h Volume", className: "w-36 px-3 text-center" },
   { label: "Market Cap", className: "w-36 px-3 text-center" },
   { label: "Graph", className: "w-44 px-3 text-left" },
 ];
@@ -192,7 +196,9 @@ const mapLeaderboardToRows = (
     price: formatPrice(item.price),
     h1: formatPercent(item.change1h),
     h24: formatPercent(item.change24h),
+    d7: formatPercent(item.change7d),
     marketCap: formatMarketCap(item.marketCap),
+    volume24h: formatMarketCap(item.volume24h),
     tokenMint: item.tokenMint,
     sparkline: item.sparkline ?? [8, 9, 12, 11, 13, 15, 16, 18, 17, 19, 21, 22],
     positive: (item.change24h ?? item.score) >= 0,
@@ -201,41 +207,53 @@ const mapLeaderboardToRows = (
 
 function Sparkline({
   points,
-  negative = false,
   width = 148,
   height = 54,
 }: {
   points: number[];
-  negative?: boolean;
   width?: number;
   height?: number;
 }) {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = Math.max(max - min, 1);
-  const path = points
-    .map((point, index) => {
-      const x = (index / (points.length - 1)) * width;
-      const y = height - ((point - min) / span) * height;
+  const values = points.filter((point) => Number.isFinite(point));
+
+  if (values.length < 2) {
+    return <span className="text-xs text-slate-600">-</span>;
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = Math.max(max - min, Number.EPSILON);
+  const positive = values.at(-1)! >= values[0]!;
+  const stroke = positive ? "#22c55e" : "#ff3b30";
+  const coordinates = values.map((point, index) => {
+    const x = (index / (values.length - 1)) * width;
+    const y = height - ((point - min) / span) * (height - 5) - 2.5;
+
+    return [x, y] as const;
+  });
+  const linePath = coordinates
+    .map(([x, y], index) => {
       return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
     })
     .join(" ");
+  const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
 
   return (
     <svg
       aria-hidden="true"
-      className={negative ? "text-red-500" : "text-green-400"}
+      className="block"
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       width={width}
     >
+      <path d={areaPath} fill={stroke} opacity="0.08" />
       <path
-        d={path}
+        d={linePath}
         fill="none"
-        stroke="currentColor"
+        stroke={stroke}
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
+        strokeWidth="1.6"
       />
     </svg>
   );
@@ -271,12 +289,22 @@ function ChangeText({ value }: { value: string }) {
   );
 }
 
+const getNewsSourceLabel = (source: string) => {
+  if (source === "fmp_crypto_news") {
+    return "Crypto news";
+  }
+
+  return "Bags launch feed";
+};
+
 function RightRail({
   insights,
-  latestMarketNews,
+  latestBagsSignals,
+  latestCryptoNews,
 }: {
   insights: BagsMarketNewsItem[];
-  latestMarketNews: BagsMarketNewsItem[];
+  latestBagsSignals: BagsMarketNewsItem[];
+  latestCryptoNews: BagsMarketNewsItem[];
 }) {
   const primaryInsight = insights.at(0);
 
@@ -327,7 +355,7 @@ function RightRail({
 
         <Separator className="my-5 bg-[#1a1a1a]" />
 
-        <section id="latest-bags-signals">
+        <section>
           <h3 className="mb-3 font-semibold text-slate-100">
             Bags Narratives Today
           </h3>
@@ -346,24 +374,26 @@ function RightRail({
 
         <Separator className="my-5 bg-[#1a1a1a]" />
 
-        <section>
+        <section id="latest-bags-signals">
           <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-100">
             <Newspaper className="size-4 text-zinc-400" />
             Latest Bags Signals
           </h3>
           <div className="space-y-6 border-l border-[#1a1a1a] pl-4">
-            {latestMarketNews.length === 0 ? (
+            {latestBagsSignals.length === 0 ? (
               <p className="text-sm text-slate-500">
                 No live signals available.
               </p>
             ) : (
-              latestMarketNews.map((item, index) => (
+              latestBagsSignals.map((item, index) => (
                 <article
                   className="relative"
                   key={`${item.source}-${item.tokenMint ?? item.href}-${index}`}
                 >
                   <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-600" />
-                  <p className="text-xs text-slate-500">Bags launch feed</p>
+                  <p className="text-xs text-slate-500">
+                    {getNewsSourceLabel(item.source)}
+                  </p>
                   <h4 className="mt-3 text-sm font-semibold leading-5 text-slate-200">
                     <Link className="hover:text-white" href={item.href}>
                       {item.headline}
@@ -378,6 +408,42 @@ function RightRail({
                   >
                     1 source
                   </Badge>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
+        <Separator className="my-5 bg-[#1a1a1a]" />
+
+        <section id="latest-crypto-news">
+          <h3 className="mb-4 flex items-center gap-2 font-semibold text-slate-100">
+            <Newspaper className="size-4 text-zinc-400" />
+            Latest Crypto News
+          </h3>
+          <div className="space-y-6 border-l border-[#1a1a1a] pl-4">
+            {latestCryptoNews.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No crypto news available.
+              </p>
+            ) : (
+              latestCryptoNews.map((item, index) => (
+                <article
+                  className="relative"
+                  key={`${item.source}-${item.href}-${index}`}
+                >
+                  <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-600" />
+                  <p className="text-xs text-slate-500">
+                    {getNewsSourceLabel(item.source)}
+                  </p>
+                  <h4 className="mt-3 text-sm font-semibold leading-5 text-slate-200">
+                    <Link className="hover:text-white" href={item.href}>
+                      {item.headline}
+                    </Link>
+                  </h4>
+                  <p className="mt-2 line-clamp-3 text-xs leading-5 text-slate-500">
+                    {item.detail}
+                  </p>
                 </article>
               ))
             )}
@@ -629,9 +695,13 @@ export default async function Home({
     bagsMarket && bagsMarket.topGainers.length > 0
       ? bagsMarket.topGainers.slice(0, 3)
       : [];
-  const latestMarketNews =
-    bagsMarket && bagsMarket.latestMarketNews.length > 0
-      ? bagsMarket.latestMarketNews
+  const latestCryptoNews =
+    bagsMarket && bagsMarket.latestCryptoNews.length > 0
+      ? bagsMarket.latestCryptoNews
+      : [];
+  const latestBagsSignals =
+    bagsMarket && bagsMarket.latestBagsSignals.length > 0
+      ? bagsMarket.latestBagsSignals
       : [];
   const insights =
     bagsMarket && bagsMarket.insights.length > 0 ? bagsMarket.insights : [];
@@ -772,7 +842,7 @@ export default async function Home({
             </div>
 
             <div className="overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#000000]">
-              <Table className="min-w-[980px] table-fixed">
+              <Table className="min-w-[1190px] table-fixed">
                 <colgroup>
                   <col className="w-11" />
                   <col className="w-14" />
@@ -780,6 +850,8 @@ export default async function Home({
                   <col className="w-40" />
                   <col className="w-24" />
                   <col className="w-24" />
+                  <col className="w-24" />
+                  <col className="w-36" />
                   <col className="w-36" />
                   <col className="w-44" />
                 </colgroup>
@@ -800,7 +872,7 @@ export default async function Home({
                     <TableRow className="border-[#1a1a1a] hover:bg-transparent">
                       <TableCell
                         className="h-32 px-3 text-center text-sm text-slate-500"
-                        colSpan={8}
+                        colSpan={10}
                       >
                         No market-cap rows available.
                       </TableCell>
@@ -855,15 +927,20 @@ export default async function Home({
                         <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
                           <ChangeText value={token.h24} />
                         </TableCell>
+                        <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
+                          <ChangeText value={token.d7} />
+                        </TableCell>
+                        <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
+                          {token.volume24h}
+                        </TableCell>
                         <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
                           {token.marketCap}
                         </TableCell>
                         <TableCell className="w-44 px-3">
                           <Sparkline
-                            height={45}
-                            negative={!token.positive}
+                            height={44}
                             points={token.sparkline}
-                            width={140}
+                            width={136}
                           />
                         </TableCell>
                       </TableRow>
@@ -880,9 +957,15 @@ export default async function Home({
               ) : null}
             </div>
           </section>
+
+          <LatestNewsGallery news={latestCryptoNews} />
         </div>
 
-        <RightRail insights={insights} latestMarketNews={latestMarketNews} />
+        <RightRail
+          insights={insights}
+          latestBagsSignals={latestBagsSignals}
+          latestCryptoNews={latestCryptoNews}
+        />
       </div>
 
       <a
@@ -890,7 +973,7 @@ export default async function Home({
         className="fixed bottom-7 right-7 grid size-11 place-items-center rounded-lg bg-[#111111] text-zinc-100 hover:bg-[#1f1f1f]"
         href="#top"
       >
-        <Trophy className="size-5" />
+        <ArrowUp className="size-5" />
       </a>
 
       <div className="fixed left-5 top-[665px] hidden size-10 place-items-center rounded-full border border-red-400/40 bg-red-400/10 text-white lg:grid">

@@ -35,8 +35,10 @@ export type BagsMarketItem = {
   score: number;
   price?: number | null;
   marketCap?: number | null;
+  volume24h?: number | null;
   change1h?: number | null;
   change24h?: number | null;
+  change7d?: number | null;
   sparkline?: number[];
   label: string;
   href: string;
@@ -48,7 +50,8 @@ export type BagsMarketNewsItem = {
   detail: string;
   tokenMint?: string;
   href: string;
-  source: "bags_launch_feed";
+  source: string;
+  createdAt: string;
 };
 
 export type BagsMarketData = {
@@ -65,6 +68,8 @@ export type BagsMarketData = {
   trending: BagsMarketItem[];
   topGainers: BagsMarketItem[];
   insights: BagsMarketNewsItem[];
+  latestBagsSignals: BagsMarketNewsItem[];
+  latestCryptoNews: BagsMarketNewsItem[];
   latestMarketNews: BagsMarketNewsItem[];
 };
 
@@ -130,16 +135,27 @@ type ApiEnvelope<T> = {
   response: T;
 };
 
+type FetchBackendOptions = {
+  revalidate: number;
+  tags?: string[];
+};
+
 export const getBackendBaseUrl = () =>
   (process.env.ASTRALMARKET_API_BASE_URL ?? "http://127.0.0.1:4000").replace(
     /\/$/u,
     "",
   );
 
-const fetchBackend = async <T>(path: string): Promise<T | null> => {
+const fetchBackend = async <T>(
+  path: string,
+  options: FetchBackendOptions,
+): Promise<T | null> => {
   try {
     const response = await fetch(`${getBackendBaseUrl()}${path}`, {
-      cache: "no-store",
+      next: {
+        revalidate: options.revalidate,
+        tags: options.tags,
+      },
     });
 
     if (!response.ok) {
@@ -154,7 +170,10 @@ const fetchBackend = async <T>(path: string): Promise<T | null> => {
 };
 
 export const fetchBagsCategory = () =>
-  fetchBackend<BagsCategoryData>("/v1/bags/category");
+  fetchBackend<BagsCategoryData>("/v1/bags/category", {
+    revalidate: 300,
+    tags: ["bags-category"],
+  });
 
 export const fetchBagsMarket = (
   options: { page?: number; pageSize?: number } = {},
@@ -164,10 +183,18 @@ export const fetchBagsMarket = (
 
   return fetchBackend<BagsMarketData>(
     `/v1/bags/market?limit=${pageSize}&page=${page}`,
+    {
+      revalidate: 30,
+      tags: ["bags-market"],
+    },
   );
 };
 
 export const fetchBagsCoin = (identifier: string) =>
   fetchBackend<BagsCoinDetailData>(
     `/v1/bags/coins/${encodeURIComponent(identifier)}`,
+    {
+      revalidate: 60,
+      tags: ["bags-coin", `bags-coin-${identifier}`],
+    },
   );
