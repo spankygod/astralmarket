@@ -57,6 +57,7 @@ const bagsMarketResponseSchema = z.object({
     }),
     trending: z.array(marketItemSchema),
     topGainers: z.array(marketItemSchema),
+    topEarners: z.array(marketItemSchema),
     leaderboard: z.array(marketItemSchema),
     pagination: z.object({
       page: z.number(),
@@ -203,6 +204,7 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
               stats: await getCachedMarketStats(fastify.prisma),
               trending: leaderboards.trending,
               topGainers: leaderboards.topGainers,
+              topEarners: leaderboards.topEarners,
               leaderboard: leaderboards.leaderboard,
               pagination: {
                 page,
@@ -267,6 +269,7 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
             stats: buildMarketStats(feed, pools),
             trending,
             topGainers,
+            topEarners: [],
             leaderboard: trending,
             pagination: {
               page: 1,

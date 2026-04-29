@@ -25,6 +25,11 @@ const envSchema = z.object({
     .transform((value) => value === "true"),
   HOST: z.string().default("0.0.0.0"),
   FMP_NEWS_DAILY_REQUEST_LIMIT: z.coerce.number().int().positive().default(200),
+  MARKET_SNAPSHOT_RETENTION_DAYS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(7),
   NEWS_API_KEY: optionalNonEmptyString,
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -49,6 +54,7 @@ export type AppConfig = {
   bagsSyncOnStart: boolean;
   fmpNewsDailyRequestLimit: number;
   host: string;
+  marketSnapshotRetentionDays: number;
   newsApiKey?: string;
   nodeEnv: "development" | "test" | "production";
   port: number;
@@ -87,6 +93,7 @@ export function buildAppConfig(
     bagsSyncOnStart: parsed.BAGS_SYNC_ON_START,
     fmpNewsDailyRequestLimit: parsed.FMP_NEWS_DAILY_REQUEST_LIMIT,
     host: parsed.HOST,
+    marketSnapshotRetentionDays: parsed.MARKET_SNAPSHOT_RETENTION_DAYS,
     newsApiKey: parsed.NEWS_API_KEY,
     nodeEnv: parsed.NODE_ENV,
     port: parsed.PORT,

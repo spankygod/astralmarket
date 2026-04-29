@@ -86,8 +86,25 @@ const bagsTradeQuoteSchema = z.object({
   simulatedComputeUnits: z.number().optional(),
 });
 
+const bagsLifetimeFeesTopTokenSchema = z
+  .object({
+    token: z.string(),
+    lifetimeFees: z.string(),
+    tokenInfo: z
+      .object({
+        name: z.string().nullable().optional(),
+        symbol: z.string().nullable().optional(),
+        icon: z.string().nullable().optional(),
+      })
+      .passthrough()
+      .nullable()
+      .optional(),
+  })
+  .passthrough();
+
 type BagsPool = z.infer<typeof bagsPoolSchema>;
 type BagsTokenCreator = z.infer<typeof bagsTokenCreatorSchema>;
+type BagsLifetimeFeesTopToken = z.infer<typeof bagsLifetimeFeesTopTokenSchema>;
 type BagsTokenLaunch = z.infer<typeof bagsTokenLaunchSchema>;
 type BagsTradeQuote = z.infer<typeof bagsTradeQuoteSchema>;
 
@@ -208,6 +225,15 @@ export const bagsClient = {
         query: { tokenMint },
       },
       z.string(),
+    );
+  },
+
+  getLifetimeFeesTopTokens(): Promise<BagsLifetimeFeesTopToken[]> {
+    return request(
+      {
+        path: "/token-launch/top-tokens/lifetime-fees",
+      },
+      z.array(bagsLifetimeFeesTopTokenSchema),
     );
   },
 
