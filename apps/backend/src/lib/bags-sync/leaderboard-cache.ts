@@ -5,6 +5,7 @@ import {
   rankTopGainers,
   rankTrendingTokens,
 } from "../bags-leaderboards";
+import { getDexScreenerMarketData } from "../dexscreener-client";
 import { getMarketSignal, type BagsLaunchView } from "../bags-market";
 import {
   chunk,
@@ -15,6 +16,7 @@ import {
 
 const cachedLeaderboardSideListLimit = 100;
 const lamportsPerSol = 1_000_000_000;
+const wrappedSolMint = "So11111111111111111111111111111111111111112";
 const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 const referenceToleranceMs = 2 * 60 * 60 * 1000;
 const maxSparklinePoints = 120;
@@ -212,6 +214,12 @@ const formatLifetimeFees = (lifetimeFees: string) => {
   })} SOL`;
 };
 
+const getSolUsdPrice = async () => {
+  const solMarketData = await getDexScreenerMarketData([wrappedSolMint]);
+
+  return solMarketData.get(wrappedSolMint)?.price ?? null;
+};
+
 const toMarketLeaderboardRow = (
   kind: string,
   entry: SyncLeaderboardEntry,
@@ -249,26 +257,34 @@ const toTopEarnerLeaderboardRow = (
   entry: LifetimeFeesTopToken,
   launch: BagsLaunchView,
   rank: number,
-): Prisma.MarketLeaderboardEntryCreateManyInput => ({
-  kind: "top_earners",
-  rank,
-  name: entry.tokenInfo?.name ?? launch.name,
-  symbol: entry.tokenInfo?.symbol ?? launch.symbol,
-  image: entry.tokenInfo?.icon ?? launch.image,
-  tokenMint: entry.token,
-  metric: formatLifetimeFees(entry.lifetimeFees),
-  score: Number(entry.lifetimeFees) / lamportsPerSol,
-  price: null,
-  marketCap: null,
-  volume24h: null,
-  change1h: null,
-  change24h: null,
-  change7d: null,
-  sparkline: toJson(getSparkline(rank + 16, rank)),
-  label: "Lifetime creator fees",
-  href: `/coins/${encodeURIComponent(entry.token)}`,
-  source: "bags",
-});
+  solUsdPrice: number | null,
+): Prisma.MarketLeaderboardEntryCreateManyInput => {
+  const lifetimeFeesSol = Number(entry.lifetimeFees) / lamportsPerSol;
+
+  return {
+    kind: "top_earners",
+    rank,
+    name: entry.tokenInfo?.name ?? launch.name,
+    symbol: entry.tokenInfo?.symbol ?? launch.symbol,
+    image: entry.tokenInfo?.icon ?? launch.image,
+    tokenMint: entry.token,
+    metric: formatLifetimeFees(entry.lifetimeFees),
+    score: lifetimeFeesSol,
+    price: null,
+    marketCap:
+      solUsdPrice === null || !Number.isFinite(lifetimeFeesSol)
+        ? null
+        : Number((lifetimeFeesSol * solUsdPrice).toFixed(2)),
+    volume24h: null,
+    change1h: null,
+    change24h: null,
+    change7d: null,
+    sparkline: toJson(getSparkline(rank + 16, rank)),
+    label: "Lifetime creator fees",
+    href: `/coins/${encodeURIComponent(entry.token)}`,
+    source: "bags",
+  };
+};
 
 export const refreshMarketLeaderboardCache = async (
   prisma: PrismaClient,
@@ -357,6 +373,7 @@ export const refreshMarketLeaderboardCache = async (
         referenceByMint,
       ),
     );
+  const solUsdPrice = await getSolUsdPrice().catch(() => null);
   const topEarnerRows = lifetimeFeesTopTokens
     .map((entry, index) => {
       const launch = launchesByMint.get(entry.token);
@@ -365,7 +382,7 @@ export const refreshMarketLeaderboardCache = async (
         return null;
       }
 
-      return toTopEarnerLeaderboardRow(entry, launch, index + 1);
+      return toTopEarnerLeaderboardRow(entry, launch, index + 1, solUsdPrice);
     })
     .filter(
       (row): row is Prisma.MarketLeaderboardEntryCreateManyInput =>

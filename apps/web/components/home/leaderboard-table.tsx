@@ -10,7 +10,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { BagsMarketPagination, BagsTableRow } from "@/lib/home-market-mappers";
+import type {
+  BagsMarketPagination,
+  BagsTableRow,
+} from "@/lib/home-market-mappers";
 
 import { ChangeText } from "./market-text";
 import { Sparkline } from "./sparkline";
@@ -26,6 +29,14 @@ const leaderboardColumns = [
   { label: "24h Volume", className: "w-36 px-3 text-center" },
   { label: "Market Cap", className: "w-36 px-3 text-center" },
   { label: "Graph", className: "w-44 px-3 text-left" },
+];
+
+const topEarnersColumns = [
+  { label: " ", className: "w-11 px-3" },
+  { label: "#", className: "w-14 px-3 text-left" },
+  { label: "Token", className: "min-w-[280px] px-3 text-left" },
+  { label: "Lifetime Fees", className: "w-44 px-3 text-center" },
+  { label: "Amount SOL to USDC", className: "w-52 px-3 text-center" },
 ];
 
 const getPaginationItems = (page: number, totalPages: number) => {
@@ -146,33 +157,57 @@ export function LeaderboardTable({
   pageSize,
   pagination,
   tokens,
+  variant = "market",
 }: {
   metricColumnLabel?: string;
   pageSize: number;
   pagination?: BagsMarketPagination;
   tokens: BagsTableRow[];
+  variant?: "market" | "top-earners";
 }) {
-  const columns = leaderboardColumns.map((column) =>
-    column.label === "Market Cap"
-      ? { ...column, label: metricColumnLabel }
-      : column,
-  );
+  const isTopEarners = variant === "top-earners";
+  const columns = isTopEarners
+    ? topEarnersColumns
+    : leaderboardColumns.map((column) =>
+        column.label === "Market Cap"
+          ? { ...column, label: metricColumnLabel }
+          : column,
+      );
+  const emptyMessage = isTopEarners
+    ? "No top-earner rows available."
+    : "No market-cap rows available.";
 
   return (
     <div className="overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#000000]">
-      <Table className="min-w-[1190px] table-fixed">
-        <colgroup>
-          <col className="w-11" />
-          <col className="w-14" />
-          <col />
-          <col className="w-40" />
-          <col className="w-24" />
-          <col className="w-24" />
-          <col className="w-24" />
-          <col className="w-36" />
-          <col className="w-36" />
-          <col className="w-44" />
-        </colgroup>
+      <Table
+        className={
+          isTopEarners
+            ? "min-w-[760px] table-fixed"
+            : "min-w-[1190px] table-fixed"
+        }
+      >
+        {isTopEarners ? (
+          <colgroup>
+            <col className="w-11" />
+            <col className="w-14" />
+            <col />
+            <col className="w-44" />
+            <col className="w-52" />
+          </colgroup>
+        ) : (
+          <colgroup>
+            <col className="w-11" />
+            <col className="w-14" />
+            <col />
+            <col className="w-40" />
+            <col className="w-24" />
+            <col className="w-24" />
+            <col className="w-24" />
+            <col className="w-36" />
+            <col className="w-36" />
+            <col className="w-44" />
+          </colgroup>
+        )}
         <TableHeader>
           <TableRow className="border-[#1f1f1f] hover:bg-transparent">
             {columns.map((column) => (
@@ -190,9 +225,9 @@ export function LeaderboardTable({
             <TableRow className="border-[#1a1a1a] hover:bg-transparent">
               <TableCell
                 className="h-32 px-3 text-center text-sm text-slate-500"
-                colSpan={10}
+                colSpan={columns.length}
               >
-                No market-cap rows available.
+                {emptyMessage}
               </TableCell>
             </TableRow>
           ) : (
@@ -236,27 +271,44 @@ export function LeaderboardTable({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell className="w-40 px-3 text-center font-mono tabular-nums text-zinc-50">
-                  {token.price}
-                </TableCell>
-                <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
-                  <ChangeText value={token.h1} />
-                </TableCell>
-                <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
-                  <ChangeText value={token.h24} />
-                </TableCell>
-                <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
-                  <ChangeText value={token.d7} />
-                </TableCell>
-                <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
-                  {token.volume24h}
-                </TableCell>
-                <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
-                  {token.marketCap}
-                </TableCell>
-                <TableCell className="w-44 px-3">
-                  <Sparkline height={44} points={token.sparkline} width={136} />
-                </TableCell>
+                {isTopEarners ? (
+                  <>
+                    <TableCell className="w-44 px-3 text-center font-mono tabular-nums text-zinc-50">
+                      {token.lifetimeFees}
+                    </TableCell>
+                    <TableCell className="w-52 px-3 text-center font-mono tabular-nums text-zinc-50">
+                      {token.solToUsdcAmount}
+                    </TableCell>
+                  </>
+                ) : (
+                  <>
+                    <TableCell className="w-40 px-3 text-center font-mono tabular-nums text-zinc-50">
+                      {token.price}
+                    </TableCell>
+                    <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
+                      <ChangeText value={token.h1} />
+                    </TableCell>
+                    <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
+                      <ChangeText value={token.h24} />
+                    </TableCell>
+                    <TableCell className="w-24 px-3 text-center text-sm tabular-nums">
+                      <ChangeText value={token.d7} />
+                    </TableCell>
+                    <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
+                      {token.volume24h}
+                    </TableCell>
+                    <TableCell className="w-36 px-3 text-center font-mono tabular-nums text-zinc-50">
+                      {token.marketCap}
+                    </TableCell>
+                    <TableCell className="w-44 px-3">
+                      <Sparkline
+                        height={44}
+                        points={token.sparkline}
+                        width={136}
+                      />
+                    </TableCell>
+                  </>
+                )}
               </TableRow>
             ))
           )}

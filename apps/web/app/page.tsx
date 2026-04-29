@@ -31,7 +31,8 @@ export default async function Home({
   const activeCategory = parseLeaderboardCategory(
     resolvedSearchParams.category,
   );
-  const page = activeCategory === "all" ? parsePage(resolvedSearchParams.page) : 1;
+  const page =
+    activeCategory === "all" ? parsePage(resolvedSearchParams.page) : 1;
   const [bagsCategory, bagsMarket] = await Promise.all([
     fetchBagsCategory(),
     fetchBagsMarket({ page, pageSize: leaderboardPageSize }),
@@ -72,14 +73,14 @@ export default async function Home({
           <section className="mt-8" id="leaderboard">
             <CategoryTabs activeCategory={activeCategory} />
             <LeaderboardTable
-              metricColumnLabel={
-                activeCategory === "top-earners" ? "Lifetime Fees" : undefined
-              }
               pageSize={leaderboardPageSize}
               pagination={
                 activeCategory === "all" ? bagsMarket?.pagination : undefined
               }
               tokens={tokens}
+              variant={
+                activeCategory === "top-earners" ? "top-earners" : "market"
+              }
             />
           </section>
 

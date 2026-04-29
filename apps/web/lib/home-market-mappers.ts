@@ -31,7 +31,9 @@ export type BagsTableRow = {
   h1: string;
   h24: string;
   d7: string;
+  lifetimeFees: string;
   marketCap: string;
+  solToUsdcAmount: string;
   volume24h: string;
   tokenMint: string;
   sparkline: number[];
@@ -67,6 +69,12 @@ const getSparkline = (item: BagsMarketItem, positive: boolean) => {
   return sparkline.length >= 2
     ? sparkline
     : buildSyntheticSparkline(item.score, item.rank, positive);
+};
+
+const formatUsdcAmount = (value?: number | null) => {
+  const formatted = formatMarketCap(value);
+
+  return formatted === "-" ? formatted : `${formatted} USDC`;
 };
 
 export const parseLeaderboardCategory = (
@@ -114,10 +122,12 @@ export const mapLeaderboardToRows = (
       h1: formatPercent(item.change1h),
       h24: formatPercent(item.change24h),
       d7: formatPercent(item.change7d),
+      lifetimeFees: item.metric,
       marketCap:
         options.metricColumn === "metric"
           ? item.metric
           : formatMarketCap(item.marketCap),
+      solToUsdcAmount: formatUsdcAmount(item.marketCap),
       volume24h: formatMarketCap(item.volume24h),
       tokenMint: item.tokenMint,
       sparkline:
