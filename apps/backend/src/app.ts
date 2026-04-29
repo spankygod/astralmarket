@@ -15,6 +15,7 @@ import bagsSyncSchedulerPlugin from "./plugins/bags-sync-scheduler";
 import configPlugin from "./plugins/config";
 import corsPlugin from "./plugins/cors";
 import prismaPlugin from "./plugins/prisma";
+import redisPlugin from "./plugins/redis";
 import sensiblePlugin from "./plugins/sensible";
 
 export interface AppOptions
@@ -41,6 +42,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
   await fastify.register(configPlugin);
   await fastify.register(sensiblePlugin);
   await fastify.register(corsPlugin);
+  await fastify.register(redisPlugin);
   await fastify.register(prismaPlugin);
   await fastify.register(bagsSyncSchedulerPlugin);
 

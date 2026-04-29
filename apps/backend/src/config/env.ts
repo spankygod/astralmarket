@@ -25,11 +25,7 @@ const envSchema = z.object({
     .transform((value) => value === "true"),
   HOST: z.string().default("0.0.0.0"),
   FMP_NEWS_DAILY_REQUEST_LIMIT: z.coerce.number().int().positive().default(200),
-  MARKET_SNAPSHOT_RETENTION_DAYS: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(7),
+  MARKET_SNAPSHOT_RETENTION_DAYS: z.coerce.number().int().positive().default(7),
   NEWS_API_KEY: optionalNonEmptyString,
   NODE_ENV: z
     .enum(["development", "test", "production"])
@@ -38,6 +34,7 @@ const envSchema = z.object({
   PRICE_QUOTE_MINT: z
     .string()
     .default("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"),
+  REDIS_URL: optionalNonEmptyString,
   SOLANA_RPC_URL: z
     .string()
     .url()
@@ -59,6 +56,7 @@ export type AppConfig = {
   nodeEnv: "development" | "test" | "production";
   port: number;
   priceQuoteMint: string;
+  redisUrl?: string;
   solanaRpcUrl: string;
   isDevelopment: boolean;
   isProduction: boolean;
@@ -98,6 +96,7 @@ export function buildAppConfig(
     nodeEnv: parsed.NODE_ENV,
     port: parsed.PORT,
     priceQuoteMint: parsed.PRICE_QUOTE_MINT,
+    redisUrl: parsed.REDIS_URL,
     solanaRpcUrl: parsed.SOLANA_RPC_URL,
     isDevelopment: parsed.NODE_ENV === "development",
     isProduction: parsed.NODE_ENV === "production",

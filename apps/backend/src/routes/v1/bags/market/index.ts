@@ -15,6 +15,7 @@ import {
   formatSignal,
   getMarketSignal,
 } from "../../../../lib/bags-market";
+import { withRedisCache } from "../../../../lib/redis-cache";
 
 const marketItemSchema = z.object({
   rank: z.number(),
@@ -172,119 +173,136 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
       const leaderboardOffset = (page - 1) * limit;
 
       try {
-        const cachedLaunches = await getCachedLaunches(fastify.prisma, {
-          excludePoolOnly: true,
-          limit: bagsSignalLimit,
-        });
+        return await withRedisCache(
+          fastify,
+          {
+            key: `bags:market:v1:limit:${limit}:page:${page}`,
+            ttlSeconds: 60,
+          },
+          async () => {
+            const cachedLaunches = await getCachedLaunches(fastify.prisma, {
+              excludePoolOnly: true,
+              limit: bagsSignalLimit,
+            });
 
-        if (cachedLaunches.length > 0) {
-          const leaderboards = await getCachedLeaderboards(fastify.prisma, {
-            leaderboardLimit: limit,
-            leaderboardOffset,
-            sideListLimit: 3,
-          });
-          const totalPages = Math.max(
-            Math.ceil(leaderboards.leaderboardTotal / limit),
-            1,
-          );
-          const cachedNews = await getCachedMarketNews(fastify.prisma, {
-            bagsSignalLimit,
-            cryptoNewsLimit,
-          });
-          const latestCryptoNews = cachedNews.cryptoNews.map(toNewsItem);
-          const latestBagsSignals =
-            cachedNews.bagsSignals.length > 0
-              ? cachedNews.bagsSignals.map(toNewsItem)
-              : cachedLaunches.slice(0, bagsSignalLimit).map(toLaunchNewsItem);
-          const latestMarketNews = [...latestCryptoNews, ...latestBagsSignals];
+            if (cachedLaunches.length > 0) {
+              const leaderboards = await getCachedLeaderboards(fastify.prisma, {
+                leaderboardLimit: limit,
+                leaderboardOffset,
+                sideListLimit: limit,
+              });
+              const totalPages = Math.max(
+                Math.ceil(leaderboards.leaderboardTotal / limit),
+                1,
+              );
+              const cachedNews = await getCachedMarketNews(fastify.prisma, {
+                bagsSignalLimit,
+                cryptoNewsLimit,
+              });
+              const latestCryptoNews = cachedNews.cryptoNews.map(toNewsItem);
+              const latestBagsSignals =
+                cachedNews.bagsSignals.length > 0
+                  ? cachedNews.bagsSignals.map(toNewsItem)
+                  : cachedLaunches
+                      .slice(0, bagsSignalLimit)
+                      .map(toLaunchNewsItem);
+              const latestMarketNews = [
+                ...latestCryptoNews,
+                ...latestBagsSignals,
+              ];
 
-          return {
-            success: true as const,
-            response: {
-              stats: await getCachedMarketStats(fastify.prisma),
-              trending: leaderboards.trending,
-              topGainers: leaderboards.topGainers,
-              topEarners: leaderboards.topEarners,
-              leaderboard: leaderboards.leaderboard,
-              pagination: {
-                page,
-                pageSize: limit,
-                total: leaderboards.leaderboardTotal,
-                totalPages,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1,
-              },
-              insights: latestBagsSignals.slice(0, 3),
-              latestBagsSignals,
-              latestCryptoNews,
-              latestMarketNews,
-            },
-          };
-        }
+              return {
+                success: true as const,
+                response: {
+                  stats: await getCachedMarketStats(fastify.prisma),
+                  trending: leaderboards.trending,
+                  topGainers: leaderboards.topGainers,
+                  topEarners: leaderboards.topEarners,
+                  leaderboard: leaderboards.leaderboard,
+                  pagination: {
+                    page,
+                    pageSize: limit,
+                    total: leaderboards.leaderboardTotal,
+                    totalPages,
+                    hasNextPage: page < totalPages,
+                    hasPreviousPage: page > 1,
+                  },
+                  insights: latestBagsSignals.slice(0, 3),
+                  latestBagsSignals,
+                  latestCryptoNews,
+                  latestMarketNews,
+                },
+              };
+            }
 
-        const [feed, pools] = await Promise.all([
-          bagsClient.getTokenLaunchFeed(),
-          bagsClient.getPools(false),
-        ]);
-        const launches = buildLaunchViews(feed, pools);
-        const activeLaunches = launches.filter((launch) => launch.pool);
-        const trendingSource =
-          activeLaunches.length > 0 ? activeLaunches : launches;
-        const gainerSource =
-          activeLaunches.length > 0 ? activeLaunches : launches;
-        const trending = trendingSource.slice(0, limit).map(toMarketItem);
-        const topGainers = [...gainerSource]
-          .sort((a, b) => {
-            const aRank = a.migrationStatus === "migrated" ? 0 : 1;
-            const bRank = b.migrationStatus === "migrated" ? 0 : 1;
-            return aRank - bRank;
-          })
-          .slice(0, limit)
-          .map(toMarketItem);
-        const latestBagsSignals = launches
-          .slice(0, bagsSignalLimit)
-          .map((launch) => {
-            const displaySymbol = launch.symbol.trim() || launch.name;
+            const [feed, pools] = await Promise.all([
+              bagsClient.getTokenLaunchFeed(),
+              bagsClient.getPools(false),
+            ]);
+            const launches = buildLaunchViews(feed, pools);
+            const activeLaunches = launches.filter((launch) => launch.pool);
+            const trendingSource =
+              activeLaunches.length > 0 ? activeLaunches : launches;
+            const gainerSource =
+              activeLaunches.length > 0 ? activeLaunches : launches;
+            const trending = trendingSource.slice(0, limit).map(toMarketItem);
+            const topGainers = [...gainerSource]
+              .sort((a, b) => {
+                const aRank = a.migrationStatus === "migrated" ? 0 : 1;
+                const bRank = b.migrationStatus === "migrated" ? 0 : 1;
+                return aRank - bRank;
+              })
+              .slice(0, limit)
+              .map(toMarketItem);
+            const latestBagsSignals = launches
+              .slice(0, bagsSignalLimit)
+              .map((launch) => {
+                const displaySymbol = launch.symbol.trim() || launch.name;
+
+                return {
+                  headline: `${displaySymbol} entered the Bags launch feed as ${launch.status.replace(/_/gu, " ")}`,
+                  detail:
+                    launch.migrationStatus === "migrated"
+                      ? "Pool has migrated to DAMM v2."
+                      : launch.migrationStatus === "dbc"
+                        ? "Token has an active DBC pool."
+                        : "Token is still in launch state.",
+                  tokenMint: launch.tokenMint,
+                  href: `/coins/${encodeURIComponent(launch.tokenMint)}`,
+                  source: "bags_launch_feed" as const,
+                  createdAt: new Date().toISOString(),
+                };
+              });
+            const latestCryptoNews: typeof latestBagsSignals = [];
+            const latestMarketNews = [
+              ...latestCryptoNews,
+              ...latestBagsSignals,
+            ];
 
             return {
-              headline: `${displaySymbol} entered the Bags launch feed as ${launch.status.replace(/_/gu, " ")}`,
-              detail:
-                launch.migrationStatus === "migrated"
-                  ? "Pool has migrated to DAMM v2."
-                  : launch.migrationStatus === "dbc"
-                    ? "Token has an active DBC pool."
-                    : "Token is still in launch state.",
-              tokenMint: launch.tokenMint,
-              href: `/coins/${encodeURIComponent(launch.tokenMint)}`,
-              source: "bags_launch_feed" as const,
-              createdAt: new Date().toISOString(),
+              success: true as const,
+              response: {
+                stats: buildMarketStats(feed, pools),
+                trending,
+                topGainers,
+                topEarners: [],
+                leaderboard: trending,
+                pagination: {
+                  page: 1,
+                  pageSize: limit,
+                  total: trending.length,
+                  totalPages: 1,
+                  hasNextPage: false,
+                  hasPreviousPage: false,
+                },
+                insights: latestBagsSignals.slice(0, 3),
+                latestBagsSignals,
+                latestCryptoNews,
+                latestMarketNews,
+              },
             };
-          });
-        const latestCryptoNews: typeof latestBagsSignals = [];
-        const latestMarketNews = [...latestCryptoNews, ...latestBagsSignals];
-
-        return {
-          success: true as const,
-          response: {
-            stats: buildMarketStats(feed, pools),
-            trending,
-            topGainers,
-            topEarners: [],
-            leaderboard: trending,
-            pagination: {
-              page: 1,
-              pageSize: limit,
-              total: trending.length,
-              totalPages: 1,
-              hasNextPage: false,
-              hasPreviousPage: false,
-            },
-            insights: latestBagsSignals.slice(0, 3),
-            latestBagsSignals,
-            latestCryptoNews,
-            latestMarketNews,
           },
-        };
+        );
       } catch (error) {
         if (error instanceof BagsApiError) {
           throw fastify.httpErrors.createError(error.statusCode, error.message);

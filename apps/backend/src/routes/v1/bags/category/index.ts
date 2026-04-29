@@ -8,6 +8,7 @@ import {
   getCachedLaunches,
   getCachedMarketStats,
 } from "../../../../lib/bags-db";
+import { withRedisCache } from "../../../../lib/redis-cache";
 
 const poolSchema = z.object({
   tokenMint: z.string(),
@@ -86,105 +87,116 @@ const bagsCategoryRoute: FastifyPluginAsync = async (fastify) => {
       const { limit, onlyMigrated } = request.query;
 
       try {
-        const cachedLaunches = await getCachedLaunches(fastify.prisma, {
-          excludePoolOnly: true,
-          limit: 100,
-        });
+        return await withRedisCache(
+          fastify,
+          {
+            key: `bags:category:v1:limit:${limit}:onlyMigrated:${onlyMigrated}`,
+            ttlSeconds: 120,
+          },
+          async () => {
+            const cachedLaunches = await getCachedLaunches(fastify.prisma, {
+              excludePoolOnly: true,
+              limit: 100,
+            });
 
-        if (cachedLaunches.length > 0) {
-          const launches = cachedLaunches
-            .filter((launch) =>
-              onlyMigrated ? launch.migrationStatus === "migrated" : true,
-            )
-            .slice(0, limit)
-            .map((launch) => ({
-              name: launch.name,
-              symbol: launch.symbol,
-              description: launch.description,
-              image: launch.image,
-              tokenMint: launch.tokenMint,
-              status: launch.status,
-              twitter: launch.twitter,
-              website: launch.website,
-              launchSignature: launch.launchSignature,
-              uri: launch.uri,
-              dbcPoolKey: launch.dbcPoolKey,
-              dbcConfigKey: launch.dbcConfigKey,
-              pool: launch.pool,
-              migrationStatus: launch.migrationStatus,
-            }));
+            if (cachedLaunches.length > 0) {
+              const launches = cachedLaunches
+                .filter((launch) =>
+                  onlyMigrated ? launch.migrationStatus === "migrated" : true,
+                )
+                .slice(0, limit)
+                .map((launch) => ({
+                  name: launch.name,
+                  symbol: launch.symbol,
+                  description: launch.description,
+                  image: launch.image,
+                  tokenMint: launch.tokenMint,
+                  status: launch.status,
+                  twitter: launch.twitter,
+                  website: launch.website,
+                  launchSignature: launch.launchSignature,
+                  uri: launch.uri,
+                  dbcPoolKey: launch.dbcPoolKey,
+                  dbcConfigKey: launch.dbcConfigKey,
+                  pool: launch.pool,
+                  migrationStatus: launch.migrationStatus,
+                }));
 
-          return {
-            success: true as const,
-            response: {
-              category: {
-                id: "bags.fm" as const,
-                name: "Bags.fm" as const,
-                source: "bags" as const,
-                description:
-                  "Bags-native token launches, DBC pools, and migrated DAMM v2 markets.",
-              },
-              stats: await getCachedMarketStats(fastify.prisma),
-              launches,
-            },
-          };
-        }
+              return {
+                success: true as const,
+                response: {
+                  category: {
+                    id: "bags.fm" as const,
+                    name: "Bags.fm" as const,
+                    source: "bags" as const,
+                    description:
+                      "Bags-native token launches, DBC pools, and migrated DAMM v2 markets.",
+                  },
+                  stats: await getCachedMarketStats(fastify.prisma),
+                  launches,
+                },
+              };
+            }
 
-        const [feed, pools] = await Promise.all([
-          bagsClient.getTokenLaunchFeed(),
-          bagsClient.getPools(onlyMigrated),
-        ]);
-        const poolsByMint = new Map(
-          pools.map((pool) => [pool.tokenMint, pool]),
-        );
-        const launches = feed
-          .map((launch) => {
-            const pool = poolsByMint.get(launch.tokenMint) ?? null;
+            const [feed, pools] = await Promise.all([
+              bagsClient.getTokenLaunchFeed(),
+              bagsClient.getPools(onlyMigrated),
+            ]);
+            const poolsByMint = new Map(
+              pools.map((pool) => [pool.tokenMint, pool]),
+            );
+            const launches = feed
+              .map((launch) => {
+                const pool = poolsByMint.get(launch.tokenMint) ?? null;
+
+                return {
+                  name: launch.name,
+                  symbol: launch.symbol,
+                  description: launch.description,
+                  image: launch.image,
+                  tokenMint: launch.tokenMint,
+                  status: launch.status,
+                  twitter: launch.twitter,
+                  website: launch.website,
+                  launchSignature: launch.launchSignature,
+                  uri: launch.uri,
+                  dbcPoolKey: launch.dbcPoolKey,
+                  dbcConfigKey: launch.dbcConfigKey,
+                  pool,
+                  migrationStatus: getMigrationStatus(launch, pool),
+                };
+              })
+              .filter((launch) =>
+                onlyMigrated ? launch.migrationStatus === "migrated" : true,
+              )
+              .slice(0, limit);
+
+            const migratedPools = pools.filter(
+              (pool) => pool.dammV2PoolKey,
+            ).length;
 
             return {
-              name: launch.name,
-              symbol: launch.symbol,
-              description: launch.description,
-              image: launch.image,
-              tokenMint: launch.tokenMint,
-              status: launch.status,
-              twitter: launch.twitter,
-              website: launch.website,
-              launchSignature: launch.launchSignature,
-              uri: launch.uri,
-              dbcPoolKey: launch.dbcPoolKey,
-              dbcConfigKey: launch.dbcConfigKey,
-              pool,
-              migrationStatus: getMigrationStatus(launch, pool),
+              success: true as const,
+              response: {
+                category: {
+                  id: "bags.fm" as const,
+                  name: "Bags.fm" as const,
+                  source: "bags" as const,
+                  description:
+                    "Bags-native token launches, DBC pools, and migrated DAMM v2 markets.",
+                },
+                stats: {
+                  launches: feed.length,
+                  activePools: pools.length,
+                  migratedPools,
+                  liveDbcPools: Math.max(pools.length - migratedPools, 0),
+                  quoteMint: env.priceQuoteMint,
+                },
+                launches,
+              },
             };
-          })
-          .filter((launch) =>
-            onlyMigrated ? launch.migrationStatus === "migrated" : true,
-          )
-          .slice(0, limit);
-
-        const migratedPools = pools.filter((pool) => pool.dammV2PoolKey).length;
-
-        return {
-          success: true as const,
-          response: {
-            category: {
-              id: "bags.fm" as const,
-              name: "Bags.fm" as const,
-              source: "bags" as const,
-              description:
-                "Bags-native token launches, DBC pools, and migrated DAMM v2 markets.",
-            },
-            stats: {
-              launches: feed.length,
-              activePools: pools.length,
-              migratedPools,
-              liveDbcPools: Math.max(pools.length - migratedPools, 0),
-              quoteMint: env.priceQuoteMint,
-            },
-            launches,
           },
-        };
+        );
       } catch (error) {
         if (error instanceof BagsApiError) {
           throw fastify.httpErrors.createError(error.statusCode, error.message);
