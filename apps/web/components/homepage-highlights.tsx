@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
 import type { BagsMarketItem } from "@/lib/bags-api";
+import { formatMarketCap, formatPercent } from "@/lib/market-format";
 
 const overviewCards = [
   {
@@ -65,7 +66,7 @@ function Sparkline({
   );
 }
 
-function MarketMetric({ value }: { value: string }) {
+function OverviewMetric({ value }: { value: string }) {
   const normalizedValue = value.trim();
 
   if (
@@ -100,10 +101,71 @@ function MarketMetric({ value }: { value: string }) {
   );
 }
 
+function TrendingMetric({
+  change24h,
+  volume24h,
+}: {
+  change24h?: number | null;
+  volume24h?: number | null;
+}) {
+  const amount = formatMarketCap(volume24h);
+
+  if (amount === "-") {
+    return <span className="text-slate-500">-</span>;
+  }
+
+  if (change24h === null || change24h === undefined) {
+    return <span className="font-medium text-zinc-100">{amount}</span>;
+  }
+
+  const negative = change24h < 0;
+  const Icon = negative ? ArrowDown : ArrowUp;
+
+  return (
+    <span
+      className={
+        negative
+          ? "inline-flex items-center gap-1 font-medium text-red-400"
+          : "inline-flex items-center gap-1 font-medium text-green-400"
+      }
+    >
+      <Icon className="size-3" />
+      {amount}
+    </span>
+  );
+}
+
+function GainerMetric({ change24h }: { change24h?: number | null }) {
+  const percent = formatPercent(change24h);
+
+  if (percent === "-") {
+    return <span className="text-slate-500">-</span>;
+  }
+
+  const negative = (change24h ?? 0) < 0;
+  const Icon = negative ? ArrowDown : ArrowUp;
+  const displayValue = percent.replace(/^[+-]/u, "");
+
+  return (
+    <span
+      className={
+        negative
+          ? "inline-flex items-center gap-1 font-medium text-red-400"
+          : "inline-flex items-center gap-1 font-medium text-green-400"
+      }
+    >
+      <Icon className="size-3" />
+      {displayValue}
+    </span>
+  );
+}
+
 function MarketList({
+  metric,
   rows,
   title,
 }: {
+  metric: "gainer" | "trending";
   rows: BagsMarketItem[];
   title: string;
 }) {
@@ -156,7 +218,14 @@ function MarketList({
                 </div>
               </div>
               <p className="shrink-0 font-mono text-sm text-zinc-100">
-                <MarketMetric value={row.metric} />
+                {metric === "trending" ? (
+                  <TrendingMetric
+                    change24h={row.change24h}
+                    volume24h={row.volume24h}
+                  />
+                ) : (
+                  <GainerMetric change24h={row.change24h} />
+                )}
               </p>
             </Link>
           ))
@@ -186,7 +255,7 @@ function OverviewPanel({
                 {card.value}
               </p>
               <p className="mt-2 text-sm text-zinc-300">
-                {card.title} <MarketMetric value={card.note} />
+                {card.title} <OverviewMetric value={card.note} />
               </p>
             </div>
             <Sparkline points={card.sparkline} width={155} height={58} />
@@ -194,8 +263,8 @@ function OverviewPanel({
         ))}
       </div>
 
-      <MarketList title="Trending" rows={trending} />
-      <MarketList title="Top Gainers" rows={gainers} />
+      <MarketList metric="trending" title="Trending" rows={trending} />
+      <MarketList metric="gainer" title="Top Gainers" rows={gainers} />
     </div>
   );
 }
