@@ -1,5 +1,4 @@
 import {
-  ArrowLeft,
   Bell,
   ExternalLink,
   Globe,
@@ -61,15 +60,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
   const ticker = coin.token.symbol || coin.token.name || "Token";
 
   return (
-    <aside className="min-w-0 border-r border-[#1a1a1a] px-6 py-8 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto lg:px-7">
-      <Link
-        className={`${coinActionClassName} mb-8 border border-[#2a2a2a] bg-[#111111] text-zinc-100 hover:bg-[#181818]`}
-        href="/"
-      >
-        <ArrowLeft className="size-4" />
-        Markets
-      </Link>
-
+    <aside className="min-w-0 border-r border-[#1a1a1a] px-6 py-8 lg:px-7">
       <div className="flex items-center gap-3 text-sm text-slate-400">
         <Link className="hover:text-white" href="/">
           Cryptocurrencies
