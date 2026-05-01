@@ -167,12 +167,16 @@ const fetchBackend = async <T>(
   options: FetchBackendOptions,
 ): Promise<T | null> => {
   try {
-    const response = await fetch(`${getBackendBaseUrl()}${path}`, {
-      next: {
-        revalidate: options.revalidate,
-        tags: options.tags,
-      },
-    });
+    const fetchOptions =
+      process.env.NODE_ENV === "development"
+        ? { cache: "no-store" as const }
+        : {
+            next: {
+              revalidate: options.revalidate,
+              tags: options.tags,
+            },
+          };
+    const response = await fetch(`${getBackendBaseUrl()}${path}`, fetchOptions);
 
     if (!response.ok) {
       return null;
@@ -198,7 +202,7 @@ export const fetchBagsMarket = (
   const pageSize = options.pageSize ?? 25;
 
   return fetchBackend<BagsMarketData>(
-    `/v1/bags/market?limit=${pageSize}&page=${page}&schema=amount-v2`,
+    `/v1/bags/market?limit=${pageSize}&page=${page}&schema=amount-creator-v1`,
     {
       revalidate: 300,
       tags: ["bags-market"],

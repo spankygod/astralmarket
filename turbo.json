@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
-  "globalEnv": ["ASTRALMARKET_API_BASE_URL"],
+  "globalEnv": ["ASTRALMARKET_API_BASE_URL", "NODE_ENV"],
   "ui": "tui",
   "tasks": {
     "build": {
