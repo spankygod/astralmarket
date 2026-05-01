@@ -3,15 +3,6 @@ import Image from "next/image";
 
 import { Input } from "@/components/ui/input";
 
-const navItems = [
-  ["Bags Tokens", "#leaderboard"],
-  ["Pools", "#leaderboard"],
-  ["Migrated", "#leaderboard"],
-  ["Launches", "#bags-overview"],
-  ["Intelligence", "#latest-bags-signals"],
-  ["API", "#site-footer"],
-] as const;
-
 export function SiteNav() {
   return (
     <nav className="border-b border-[#1a1a1a] bg-[#000000]">
@@ -28,13 +19,6 @@ export function SiteNav() {
           <span className="text-2xl font-bold tracking-tight text-white">
             astralmarket
           </span>
-        </div>
-        <div className="hidden items-center gap-8 text-sm font-semibold text-slate-300 lg:flex">
-          {navItems.map(([item, href]) => (
-            <a className="hover:text-white" href={href} key={item}>
-              {item}
-            </a>
-          ))}
         </div>
         <div className="ml-auto hidden items-center gap-5 text-sm font-semibold md:flex">
           <span className="text-zinc-300">Bags</span>

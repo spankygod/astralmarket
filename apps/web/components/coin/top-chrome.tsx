@@ -12,14 +12,6 @@ import {
 } from "@/lib/coin-detail-mappers";
 import { formatMarketCap, formatPercent } from "@/lib/market-format";
 
-const navItems = [
-  ["Bags Tokens", "/#leaderboard"],
-  ["Pools", "/#leaderboard"],
-  ["Migrated", "/#leaderboard"],
-  ["Launches", "/#bags-overview"],
-  ["Intelligence", "/#latest-bags-signals"],
-] as const;
-
 export function TopChrome({ coin }: { coin: BagsCoinDetailData | null }) {
   const stats = [
     ["Bags Launch", coin ? formatStatus(coin.token.status) : "N/A"],
@@ -73,13 +65,6 @@ export function TopChrome({ coin }: { coin: BagsCoinDetailData | null }) {
             />
             <span className="text-2xl font-bold text-white">astralmarket</span>
           </Link>
-          <div className="hidden items-center gap-8 text-sm font-semibold text-slate-300 lg:flex">
-            {navItems.map(([item, href]) => (
-              <Link className="hover:text-white" href={href} key={item}>
-                {item}
-              </Link>
-            ))}
-          </div>
           <div className="ml-auto hidden w-56 items-center md:flex">
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />

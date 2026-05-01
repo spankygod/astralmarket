@@ -27,7 +27,7 @@ const categoryTabs: Array<{
 ];
 
 const getCategoryHref = (category: HomeLeaderboardCategory) =>
-  category === "all" ? "/" : `/?category=${category}#leaderboard`;
+  category === "all" ? "/" : `/?category=${category}`;
 
 export function CategoryTabs({
   activeCategory,
