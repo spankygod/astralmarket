@@ -33,7 +33,7 @@ export function TopChrome({ coin }: { coin: BagsCoinDetailData | null }) {
           ))}
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <Button
-              className="size-9 border-[#263242] bg-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
+              className="size-9 border-[#2a2a2a] bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
               disabled
               size="icon"
               title="Settings are not available yet"
@@ -41,7 +41,7 @@ export function TopChrome({ coin }: { coin: BagsCoinDetailData | null }) {
               <Settings className="size-4" />
             </Button>
             <Button
-              className="size-9 border-[#263242] bg-[#111827] disabled:cursor-not-allowed disabled:opacity-50"
+              className="size-9 border-[#2a2a2a] bg-[#111111] disabled:cursor-not-allowed disabled:opacity-50"
               disabled
               size="icon"
               title="Alerts are not available yet"
@@ -69,7 +69,7 @@ export function TopChrome({ coin }: { coin: BagsCoinDetailData | null }) {
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
               <Input
-                className="h-10 border-[#1a1a1a] bg-[#111827] pl-9 text-sm text-slate-100 placeholder:text-slate-500 disabled:cursor-not-allowed disabled:opacity-70"
+                className="h-10 border-[#1a1a1a] bg-[#111111] pl-9 text-sm text-zinc-100 placeholder:text-zinc-500 disabled:cursor-not-allowed disabled:opacity-70"
                 disabled
                 placeholder="Search coming soon"
               />

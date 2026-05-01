@@ -3,7 +3,6 @@ import {
   ExternalLink,
   Globe,
   Link as LinkIcon,
-  Star,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -61,12 +60,12 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
 
   return (
     <aside className="min-w-0 border-r border-[#1a1a1a] px-6 py-8 lg:px-7">
-      <div className="flex items-center gap-3 text-sm text-slate-400">
+      <div className="flex items-center gap-3 text-sm text-zinc-400">
         <Link className="hover:text-white" href="/">
           Cryptocurrencies
         </Link>
         <span>/</span>
-        <span className="truncate text-slate-300">{coin.token.name}</span>
+        <span className="truncate text-zinc-300">{coin.token.name}</span>
       </div>
 
       <div className="mt-8 flex min-w-0 items-center gap-3">
@@ -90,11 +89,11 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
           <h1 className="truncate text-xl font-bold text-white">
             {coin.token.name}
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-zinc-400">
             {coin.token.symbol || "No symbol"} Price
           </p>
         </div>
-        <Badge className="ml-auto border-[#2a2a2a] bg-[#111827] text-slate-300">
+        <Badge className="ml-auto border-[#2a2a2a] bg-[#111111] text-zinc-300">
           # Bags
         </Badge>
       </div>
@@ -106,7 +105,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
           </p>
           <CoinChangeText value={coin.market.change24h} />
         </div>
-        <p className="mt-2 font-mono text-xs text-slate-500 break-all">
+        <p className="mt-2 break-all font-mono text-xs text-zinc-500">
           {coin.token.tokenMint}
         </p>
       </div>
@@ -114,10 +113,10 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
       <div className="mt-7">
         <div className="flex items-center justify-between gap-3 font-mono text-xs font-semibold text-zinc-100">
           <span>{formatPrice(priceStats.low)}</span>
-          <span className="font-sans text-slate-300">Cached Range</span>
+          <span className="font-sans text-zinc-300">Cached Range</span>
           <span>{formatPrice(priceStats.high)}</span>
         </div>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#1f2937]">
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#1f1f1f]">
           <div
             className="h-full rounded-full bg-green-400"
             style={{
@@ -127,7 +126,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
         </div>
       </div>
 
-      <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-[#1f2937]">
+      <div className="mt-6 h-1.5 overflow-hidden rounded-full bg-[#1f1f1f]">
         <div
           className={
             coin.token.migrationStatus === "migrated"
@@ -152,16 +151,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
           </a>
         ) : null}
         <button
-          className={`${coinActionClassName} flex-1 border border-[#334155] bg-transparent text-slate-200 hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-60`}
-          disabled
-          title="Portfolio tracking is not available yet"
-          type="button"
-        >
-          <Star className="size-4" />
-          Portfolio
-        </button>
-        <button
-          className={`${coinActionClassName} size-9 border border-[#334155] bg-transparent p-0 text-slate-200 hover:bg-[#111827] disabled:cursor-not-allowed disabled:opacity-60`}
+          className={`${coinActionClassName} size-9 border border-[#2a2a2a] bg-transparent p-0 text-zinc-200 hover:bg-[#181818] disabled:cursor-not-allowed disabled:opacity-60`}
           disabled
           title="Alerts are not available yet"
           type="button"
@@ -225,10 +215,10 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
 
       <section className="mt-8">
         <h2 className="text-lg font-bold text-white">{ticker} Converter</h2>
-        <div className="mt-4 overflow-hidden rounded-lg border border-[#334155] bg-[#050505]">
-          <div className="flex h-14 items-center justify-between border-b border-[#334155] px-3">
+        <div className="mt-4 overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#050505]">
+          <div className="flex h-14 items-center justify-between border-b border-[#1a1a1a] px-3">
             <span className="font-mono text-sm text-zinc-100">1</span>
-            <span className="text-sm font-semibold text-slate-400">
+            <span className="text-sm font-semibold text-zinc-400">
               {ticker}
             </span>
           </div>
@@ -240,7 +230,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
                     maximumFractionDigits: 8,
                   })}
             </span>
-            <span className="text-sm font-semibold text-slate-400">USD</span>
+            <span className="text-sm font-semibold text-zinc-400">USD</span>
           </div>
         </div>
       </section>
@@ -263,11 +253,11 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
         <h2 className="text-lg font-bold text-white">Info</h2>
         <div className="mt-4 space-y-4 text-sm">
           <div>
-            <p className="mb-2 text-slate-400">Website</p>
+            <p className="mb-2 text-zinc-400">Website</p>
             <div className="flex flex-wrap gap-2">
               {websiteUrl ? (
                 <a
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#1f2937] px-3 text-xs font-semibold text-zinc-100 hover:bg-[#273449]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#111111] px-3 text-xs font-semibold text-zinc-100 hover:bg-[#181818]"
                   href={websiteUrl}
                   rel="noreferrer"
                   target="_blank"
@@ -278,7 +268,7 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
               ) : null}
               {metadataUrl ? (
                 <a
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#1f2937] px-3 text-xs font-semibold text-zinc-100 hover:bg-[#273449]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#111111] px-3 text-xs font-semibold text-zinc-100 hover:bg-[#181818]"
                   href={metadataUrl}
                   rel="noreferrer"
                   target="_blank"
@@ -291,11 +281,11 @@ export function CoinSummary({ coin }: { coin: BagsCoinDetailData }) {
           </div>
 
           <div>
-            <p className="mb-2 text-slate-400">Categories</p>
+            <p className="mb-2 text-zinc-400">Categories</p>
             <div className="flex flex-wrap gap-2">
               {categories.map((category) => (
                 <Badge
-                  className="rounded-md border-[#2a2a2a] bg-[#111827] text-xs text-slate-200"
+                  className="rounded-md border-[#2a2a2a] bg-[#111111] text-xs text-zinc-200"
                   key={category}
                   variant="outline"
                 >

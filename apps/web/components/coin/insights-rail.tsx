@@ -34,11 +34,11 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
             <Sparkles className="size-4 text-white" />
             <h2 className="font-bold text-white">Insights</h2>
           </div>
-          <BookOpen className="size-4 text-slate-400" />
+          <BookOpen className="size-4 text-zinc-400" />
         </div>
 
         <section className="border border-[#1a1a1a] bg-[#080808] p-4">
-          <p className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <p className="flex items-center gap-2 text-xs font-semibold text-zinc-400">
             <Info className="size-4" />
             Why this token is moving
           </p>
@@ -46,7 +46,7 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
             {coin.token.symbol || coin.token.name} is showing a{" "}
             {coin.marketSignal.value.toFixed(1)} Bags market signal.
           </h3>
-          <p className="mt-3 text-xs leading-5 text-slate-500">
+          <p className="mt-3 text-xs leading-5 text-zinc-500">
             Signal is derived from Bags launch status, pool state, and cached
             market snapshots when available.
           </p>
@@ -57,19 +57,19 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
             <Separator className="my-5 bg-[#1a1a1a]" />
 
             <section>
-              <h3 className="mb-4 text-sm font-bold text-slate-200">
+              <h3 className="mb-4 text-sm font-bold text-zinc-200">
                 Token Feed
               </h3>
               <div className="space-y-4">
                 {news.slice(0, 4).map((item) => (
                   <article className="bg-[#080808] p-4" key={item.headline}>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-zinc-500">
                       {formatSnapshotDate(item.createdAt)} · {item.source}
                     </p>
-                    <h4 className="mt-2 text-sm font-semibold leading-5 text-slate-200">
+                    <h4 className="mt-2 text-sm font-semibold leading-5 text-zinc-200">
                       {item.headline}
                     </h4>
-                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                    <p className="mt-2 text-xs leading-5 text-zinc-500">
                       {item.detail}
                     </p>
                   </article>
@@ -82,21 +82,21 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
         <Separator className="my-5 bg-[#1a1a1a]" />
 
         <section>
-          <h3 className="mb-4 text-sm font-bold text-slate-200">
+          <h3 className="mb-4 text-sm font-bold text-zinc-200">
             Recently Happened
           </h3>
-          <div className="space-y-6 border-l border-[#263242] pl-4">
+          <div className="space-y-6 border-l border-[#2a2a2a] pl-4">
             {events.map((event, index) => (
               <article className="relative" key={event}>
-                <span className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-slate-500" />
-                <p className="text-xs text-slate-500">
+                <span className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-zinc-500" />
+                <p className="text-xs text-zinc-500">
                   {index === 0 ? "Now" : "Bags feed"}
                 </p>
-                <h4 className="mt-2 text-sm font-semibold leading-5 text-slate-200">
+                <h4 className="mt-2 text-sm font-semibold leading-5 text-zinc-200">
                   {event}
                 </h4>
                 <Badge
-                  className="mt-3 rounded-full border-[#2a2a2a] bg-transparent text-slate-400"
+                  className="mt-3 rounded-full border-[#2a2a2a] bg-transparent text-zinc-400"
                   variant="outline"
                 >
                   1 source
@@ -109,7 +109,7 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
         <Separator className="my-5 bg-[#1a1a1a]" />
 
         <section>
-          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-200">
+          <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-200">
             <UserRound className="size-4" />
             Creator
           </h3>
@@ -122,10 +122,10 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
                   creator.username ??
                   "Unknown creator"}
               </p>
-              <p className="mt-2 break-all font-mono text-xs text-slate-500">
+              <p className="mt-2 break-all font-mono text-xs text-zinc-500">
                 {creator.wallet ?? "Wallet unavailable"}
               </p>
-              <p className="mt-3 text-xs text-slate-400">
+              <p className="mt-3 text-xs text-zinc-400">
                 Royalty:{" "}
                 {creator.royaltyBps !== null && creator.royaltyBps !== undefined
                   ? `${creator.royaltyBps} bps`
@@ -133,7 +133,7 @@ export function InsightsRail({ coin }: { coin: BagsCoinDetailData }) {
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-sm text-slate-500">
+            <p className="mt-3 text-sm text-zinc-500">
               Creator data was not returned by Bags.
             </p>
           )}

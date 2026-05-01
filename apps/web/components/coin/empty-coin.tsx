@@ -7,7 +7,7 @@ import { TopChrome } from "./top-chrome";
 
 export function EmptyCoin({ identifier }: { identifier: string }) {
   return (
-    <main className="min-h-screen bg-[#000000] text-slate-100">
+    <main className="min-h-screen bg-[#000000] text-zinc-100">
       <TopChrome coin={null} />
       <div className="mx-auto max-w-5xl px-6 py-10">
         <Link
@@ -24,7 +24,7 @@ export function EmptyCoin({ identifier }: { identifier: string }) {
           <h1 className="mt-3 text-3xl font-bold text-white">
             No Bags token found for {decodeURIComponent(identifier)}
           </h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-400">
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-400">
             This page searches Bags launch-feed symbols, token mints, and token
             name slugs. Use a token from the market table or paste a Bags token
             mint directly into the URL.

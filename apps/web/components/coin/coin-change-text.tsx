@@ -4,7 +4,7 @@ import { formatPercent } from "@/lib/market-format";
 
 export function CoinChangeText({ value }: { value?: number | null }) {
   if (value === null || value === undefined || !Number.isFinite(value)) {
-    return <span className="text-slate-500">-</span>;
+    return <span className="text-zinc-500">-</span>;
   }
 
   const negative = value < 0;

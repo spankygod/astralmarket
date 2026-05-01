@@ -10,6 +10,7 @@ import {
 import type { BagsCoinDetailData } from "@/lib/bags-api";
 import {
   buildChartSeries,
+  coinActionClassName,
   formatMarketSource,
   formatSnapshotDate,
   formatTokenSupply,
@@ -32,6 +33,9 @@ const formatRankKind = (kind: string) =>
 
 const getDexPairUrl = (pairAddress?: string | null) =>
   pairAddress ? `https://dexscreener.com/solana/${pairAddress}` : null;
+
+const chartActionClassName = `${coinActionClassName} border border-[#2a2a2a] bg-[#111111] text-zinc-100 hover:bg-[#1f1f1f]`;
+const chartIconActionClassName = `${chartActionClassName} size-9 p-0`;
 
 export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
   const series = buildChartSeries(coin);
@@ -111,7 +115,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
   return (
     <section className="min-w-0 px-6 py-8 lg:px-7">
       <div className="border-b border-[#1a1a1a]">
-        <div className="flex flex-wrap items-center gap-8 text-sm font-semibold text-slate-400">
+        <div className="flex flex-wrap items-center gap-8 text-sm font-semibold text-zinc-400">
           {[
             "Overview",
             "Markets",
@@ -123,7 +127,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
               className={
                 index === 0
                   ? "border-b-2 border-green-400 pb-4 text-white"
-                  : "cursor-not-allowed pb-4 text-slate-500"
+                  : "cursor-not-allowed pb-4 text-zinc-500"
               }
               disabled={index !== 0}
               key={item}
@@ -139,34 +143,34 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
         <div className="flex flex-wrap gap-2">
           {["Price", "Compare"].map((item) => (
             <button
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#1f2937] px-4 text-sm font-bold text-zinc-100 hover:bg-[#263244]"
+              className={chartActionClassName}
               key={item}
               type="button"
             >
               {item}
-              <ChevronDown className="size-4 text-slate-300" />
+              <ChevronDown className="size-4 text-zinc-300" />
             </button>
           ))}
           <button
-            className="grid size-9 place-items-center rounded-lg bg-[#111827] text-zinc-100 hover:bg-[#1f2937]"
+            className={chartIconActionClassName}
             type="button"
           >
             <ChartCandlestick className="size-4" />
           </button>
           <button
-            className="grid size-9 place-items-center rounded-lg bg-[#111827] text-xs font-black text-zinc-100 hover:bg-[#1f2937]"
+            className={chartIconActionClassName}
             type="button"
           >
             TV
           </button>
         </div>
-        <div className="flex flex-wrap items-center gap-1 rounded-xl bg-[#111827] p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-md border border-[#2a2a2a] bg-[#050505] p-1">
           {["24H", "7D", "1M", "3M", "YTD", "1Y", "Max"].map((item) => (
             <button
               className={
                 item === "7D"
-                  ? "h-8 rounded-lg bg-[#1f2937] px-3 text-xs font-bold text-white"
-                  : "h-8 cursor-not-allowed rounded-lg px-3 text-xs font-bold text-slate-400"
+                  ? "h-8 rounded-md bg-[#111111] px-3 text-sm font-semibold text-white hover:bg-[#1f1f1f]"
+                  : "h-8 cursor-not-allowed rounded-md px-3 text-sm font-semibold text-zinc-500"
               }
               disabled={item !== "7D"}
               key={item}
@@ -177,7 +181,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
             </button>
           ))}
           <button
-            className="grid size-8 place-items-center rounded-lg text-slate-400"
+            className="grid size-8 place-items-center rounded-md text-zinc-500"
             disabled
             type="button"
           >
@@ -203,7 +207,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
             {gridLines.map(({ value, y }) => (
               <g key={y}>
                 <line
-                  stroke="#17212b"
+                  stroke="#1a1a1a"
                   strokeWidth="1"
                   x1={plotLeft}
                   x2={plotRight}
@@ -211,7 +215,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
                   y2={y}
                 />
                 <text
-                  fill="#64748b"
+                  fill="#71717a"
                   fontSize="12"
                   textAnchor="start"
                   x={plotRight + 8}
@@ -224,7 +228,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
             <path d={areaPath} fill="url(#coin-chart-fill)" />
             {volumeBars.map((bar, index) => (
               <rect
-                fill="#1e3a5f"
+                fill="#2a2a2a"
                 height={bar.height}
                 key={`${bar.x}-${index}`}
                 opacity="0.55"
@@ -253,7 +257,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
             ) : null}
             {labelIndexes.map((pointIndex) => (
               <text
-                fill="#64748b"
+                fill="#71717a"
                 fontSize="12"
                 key={series.points[pointIndex]?.label ?? pointIndex}
                 textAnchor={
@@ -275,7 +279,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
             ))}
           </svg>
           {series.sparse ? (
-            <p className="border-t border-[#1a1a1a] px-1 pt-3 text-xs text-slate-500">
+            <p className="border-t border-[#1a1a1a] px-1 pt-3 text-xs text-zinc-500">
               Collecting more cached price snapshots. The chart will become
               denser as scheduled syncs write additional market history.
             </p>
@@ -294,13 +298,13 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
 
           return (
             <div className="bg-[#050505] px-4 py-3" key={item.label}>
-              <p className="text-center text-xs font-bold text-slate-400">
+              <p className="text-center text-xs font-bold text-zinc-400">
                 {item.label}
               </p>
               <p
                 className={
                   unavailable
-                    ? "mt-2 text-center font-mono text-sm font-semibold text-slate-500"
+                    ? "mt-2 text-center font-mono text-sm font-semibold text-zinc-500"
                     : negative
                       ? "mt-2 text-center font-mono text-sm font-semibold text-red-400"
                       : "mt-2 text-center font-mono text-sm font-semibold text-green-400"
@@ -316,7 +320,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
       <section className="mt-7 grid gap-px overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#1a1a1a] sm:grid-cols-2 xl:grid-cols-3">
         {marketStats.map(([label, value]) => (
           <div className="bg-[#050505] px-4 py-4" key={label}>
-            <p className="text-xs font-semibold uppercase text-slate-500">
+            <p className="text-xs font-semibold uppercase text-zinc-500">
               {label}
             </p>
             <p className="mt-2 break-words font-mono text-sm font-semibold text-zinc-100">
@@ -335,13 +339,13 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
           <div className="mt-4 grid gap-px overflow-hidden rounded-md border border-[#1a1a1a] bg-[#1a1a1a] md:grid-cols-2 xl:grid-cols-4">
             {leaderboardRanks.map((rank) => (
               <div className="bg-[#080808] p-4" key={rank.kind}>
-                <p className="text-xs font-semibold uppercase text-slate-500">
+                <p className="text-xs font-semibold uppercase text-zinc-500">
                   {formatRankKind(rank.kind)}
                 </p>
                 <p className="mt-2 text-2xl font-bold text-white">
                   #{rank.rank.toLocaleString()}
                 </p>
-                <p className="mt-1 truncate text-xs text-slate-400">
+                <p className="mt-1 truncate text-xs text-zinc-400">
                   {rank.metric}
                 </p>
               </div>
@@ -354,7 +358,7 @@ export function MarketChart({ coin }: { coin: BagsCoinDetailData }) {
         <h2 className="text-xl font-bold text-white">
           About {coin.token.name}
         </h2>
-        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-400">
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-zinc-400">
           {coin.token.description ||
             "No Bags metadata description was returned for this token."}
         </p>
