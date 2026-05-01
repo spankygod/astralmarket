@@ -6,6 +6,7 @@ const lamportsPerSol = 1_000_000_000;
 const wrappedSolMint = "So11111111111111111111111111111111111111112";
 
 type TopEarnerAmountRow = {
+  marketCap?: number | null;
   score: number;
 };
 
@@ -27,15 +28,19 @@ export const getTopEarnerAmountUsdc = (
   row: TopEarnerAmountRow,
   solUsdcRate: number | null,
 ) => {
-  if (
-    solUsdcRate === null ||
-    !Number.isFinite(solUsdcRate) ||
-    !Number.isFinite(row.score)
-  ) {
-    return null;
+  if (solUsdcRate !== null && Number.isFinite(solUsdcRate)) {
+    const amountUsdc = row.score * solUsdcRate;
+
+    if (Number.isFinite(amountUsdc)) {
+      return Number(amountUsdc.toFixed(2));
+    }
   }
 
-  return Number((row.score * solUsdcRate).toFixed(2));
+  return row.marketCap !== null &&
+    row.marketCap !== undefined &&
+    Number.isFinite(row.marketCap)
+    ? row.marketCap
+    : null;
 };
 
 export const withTopEarnerAmounts = async <

@@ -130,7 +130,10 @@ export const mapLeaderboardToRows = (
         options.metricColumn === "metric"
           ? item.metric
           : formatMarketCap(item.marketCap),
-      amount: formatUsdcAmount(item.amountUsdc),
+      amount: formatUsdcAmount(
+        item.amountUsdc ??
+          (options.metricColumn === "metric" ? item.marketCap : null),
+      ),
       volume24h: formatMarketCap(item.volume24h),
       tokenMint: item.tokenMint,
       sparkline:
