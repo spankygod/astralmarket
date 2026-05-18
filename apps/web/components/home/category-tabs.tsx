@@ -5,6 +5,7 @@ import {
   PanelRight,
   Shield,
   Sparkles,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -18,6 +19,8 @@ const categoryTabs: Array<{
   label: string;
 }> = [
   { category: "all", icon: Grid2X2, label: "All" },
+  { category: "trending", icon: TrendingUp, label: "Trending" },
+  { category: "top-gainers", icon: Flame, label: "Top Gainers" },
   { category: "top-earners", icon: LayoutList, label: "Top Earners" },
   { icon: Shield, label: "Migrated Pools" },
   { icon: PanelRight, label: "Live DBC" },

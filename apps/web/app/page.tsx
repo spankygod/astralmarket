@@ -42,7 +42,11 @@ export default async function Home({
   const tableSource =
     activeCategory === "top-earners"
       ? bagsMarket?.topEarners
-      : bagsMarket?.leaderboard;
+      : activeCategory === "trending"
+        ? bagsMarket?.trending
+        : activeCategory === "top-gainers"
+          ? bagsMarket?.topGainers
+          : bagsMarket?.leaderboard;
   const tokens =
     mapLeaderboardToRows(tableSource, {
       metricColumn: activeCategory === "top-earners" ? "metric" : "marketCap",

@@ -19,7 +19,11 @@ const unavailableGlobalStats: Array<[string, string, string?]> = [
 
 export const leaderboardPageSize = 50;
 
-export type HomeLeaderboardCategory = "all" | "top-earners";
+export type HomeLeaderboardCategory =
+  | "all"
+  | "top-earners"
+  | "trending"
+  | "top-gainers";
 
 export type BagsTableRow = {
   rank: number;
@@ -84,7 +88,15 @@ export const parseLeaderboardCategory = (
   const rawValue = Array.isArray(value) ? value.at(0) : value;
   const normalizedValue = rawValue?.replace(/^-+/u, "");
 
-  return normalizedValue === "top-earners" ? "top-earners" : "all";
+  if (
+    normalizedValue === "top-earners" ||
+    normalizedValue === "trending" ||
+    normalizedValue === "top-gainers"
+  ) {
+    return normalizedValue;
+  }
+
+  return "all";
 };
 
 export const buildGlobalStats = (
