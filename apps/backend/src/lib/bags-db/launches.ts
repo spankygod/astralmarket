@@ -31,7 +31,8 @@ export const getCachedLaunches = async (
 };
 
 export const getCachedMarketStats = async (prisma: PrismaClient) => {
-  const [launches, activePools, migratedPools, marketTotals] =
+  const historyStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [launches, activePools, migratedPools, marketTotals, history] =
     await Promise.all([
       prisma.bagsToken.count(),
       prisma.bagsPool.count(),
@@ -51,7 +52,25 @@ export const getCachedMarketStats = async (prisma: PrismaClient) => {
           volume24h: true,
         },
       }),
+      prisma.marketStatsSnapshot.findMany({
+        where: {
+          source: "bags",
+          capturedAt: {
+            gte: historyStart,
+          },
+        },
+        orderBy: {
+          capturedAt: "asc",
+        },
+        select: {
+          capturedAt: true,
+          totalMarketCap: true,
+          totalVolume24h: true,
+        },
+      }),
     ]);
+  const totalMarketCap = marketTotals._sum.marketCap ?? null;
+  const totalVolume24h = marketTotals._sum.volume24h ?? null;
 
   return {
     launches,
@@ -59,7 +78,19 @@ export const getCachedMarketStats = async (prisma: PrismaClient) => {
     migratedPools,
     liveDbcPools: Math.max(activePools - migratedPools, 0),
     quoteMint: env.priceQuoteMint,
-    totalMarketCap: marketTotals._sum.marketCap ?? null,
-    totalVolume24h: marketTotals._sum.volume24h ?? null,
+    totalMarketCap,
+    totalVolume24h,
+    history: [
+      ...history.map((snapshot) => ({
+        capturedAt: snapshot.capturedAt.toISOString(),
+        totalMarketCap: snapshot.totalMarketCap,
+        totalVolume24h: snapshot.totalVolume24h,
+      })),
+      {
+        capturedAt: new Date().toISOString(),
+        totalMarketCap,
+        totalVolume24h,
+      },
+    ],
   };
 };

@@ -17,6 +17,15 @@ const syncResponseSchema = z.object({
       migratedPools: z.number(),
       liveDbcPools: z.number(),
       quoteMint: z.string(),
+      totalMarketCap: z.number().nullable(),
+      totalVolume24h: z.number().nullable(),
+      history: z.array(
+        z.object({
+          capturedAt: z.string(),
+          totalMarketCap: z.number().nullable(),
+          totalVolume24h: z.number().nullable(),
+        }),
+      ),
     }),
     coverage: z.object({
       durationMs: z.number(),
@@ -29,6 +38,8 @@ const syncResponseSchema = z.object({
       derivedPriceChanges: z.number(),
       priceChanges1h: z.number(),
       priceChanges24h: z.number(),
+      statsSnapshotsPruned: z.number(),
+      snapshotsPruned: z.number(),
     }),
   }),
 });

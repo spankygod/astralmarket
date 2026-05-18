@@ -72,6 +72,13 @@ const bagsMarketResponseSchema = z.object({
       quoteMint: z.string(),
       totalMarketCap: z.number().nullable(),
       totalVolume24h: z.number().nullable(),
+      history: z.array(
+        z.object({
+          capturedAt: z.string(),
+          totalMarketCap: z.number().nullable(),
+          totalVolume24h: z.number().nullable(),
+        }),
+      ),
     }),
     trending: z.array(marketItemSchema),
     topGainers: z.array(marketItemSchema),

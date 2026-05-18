@@ -51,6 +51,13 @@ const bagsCategoryResponseSchema = z.object({
       quoteMint: z.string(),
       totalMarketCap: z.number().nullable(),
       totalVolume24h: z.number().nullable(),
+      history: z.array(
+        z.object({
+          capturedAt: z.string(),
+          totalMarketCap: z.number().nullable(),
+          totalVolume24h: z.number().nullable(),
+        }),
+      ),
     }),
     launches: z.array(launchSchema),
   }),
@@ -195,6 +202,7 @@ const bagsCategoryRoute: FastifyPluginAsync = async (fastify) => {
                   quoteMint: env.priceQuoteMint,
                   totalMarketCap: null,
                   totalVolume24h: null,
+                  history: [],
                 },
                 launches,
               },

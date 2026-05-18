@@ -6,6 +6,8 @@
   "scripts": {
     "build": "pnpm run build:ts",
     "build:ts": "pnpm run clean && tsc",
+    "backfill:market-stats": "pnpm run build:ts && node dist/src/scripts/backfill-market-stats.js",
+    "backfill:market-stats:dev": "tsx src/scripts/backfill-market-stats.ts",
     "check-types": "tsc --noEmit",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "dev": "pnpm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"pnpm:watch:ts\" \"pnpm:dev:start\"",

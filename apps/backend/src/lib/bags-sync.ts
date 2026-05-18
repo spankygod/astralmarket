@@ -21,18 +21,32 @@ import {
   derivePriceChange,
   getHistoricalPriceReferences,
   pruneExpiredMarketSnapshots,
+  pruneExpiredMarketStatsSnapshots,
 } from "./bags-sync/snapshots";
-import {
-  chunk,
-  toJson,
-  type BagsSyncResult,
-} from "./bags-sync/shared";
+import { chunk, toJson, type BagsSyncResult } from "./bags-sync/shared";
 import { getTokenSupply } from "./solana-rpc";
 
 export { upsertLaunch } from "./bags-sync/launch-cache";
 export type { BagsSyncResult } from "./bags-sync/shared";
 
 const fallbackQuoteLimit = 100;
+
+const sumSnapshotMetric = (
+  snapshots: Array<{ marketCap?: number | null; volume24h?: number | null }>,
+  key: "marketCap" | "volume24h",
+) => {
+  let total = 0;
+
+  for (const snapshot of snapshots) {
+    const value = snapshot[key];
+
+    if (value !== null && value !== undefined && Number.isFinite(value)) {
+      total += value;
+    }
+  }
+
+  return Number(total.toFixed(2));
+};
 
 const marketDataPriorityScore = (
   launch: BagsLaunchView,
@@ -246,6 +260,20 @@ export const syncBagsMarket = async (
       data: snapshotRows,
     });
     rowsWritten += enrichedLaunches.length;
+    const totalMarketCap = sumSnapshotMetric(snapshotRows, "marketCap");
+    const totalVolume24h = sumSnapshotMetric(snapshotRows, "volume24h");
+
+    await prisma.marketStatsSnapshot.create({
+      data: {
+        source: "bags",
+        coins: enrichedLaunches.length,
+        pools: pools.length,
+        totalMarketCap,
+        totalVolume24h,
+        capturedAt: snapshotCapturedAt,
+      },
+    });
+    rowsWritten += 1;
     rowsWritten += await refreshMarketLeaderboardCache(
       prisma,
       enrichedLaunches,
@@ -256,6 +284,9 @@ export const syncBagsMarket = async (
       prisma,
       snapshotCapturedAt,
     );
+    const statsSnapshotsPruned = (
+      await pruneExpiredMarketStatsSnapshots(prisma, snapshotCapturedAt)
+    ).count;
 
     for (const newsChunk of chunk(launches.slice(0, 100), 25)) {
       await Promise.all(
@@ -311,6 +342,7 @@ export const syncBagsMarket = async (
       priceChanges24h: snapshotRows.filter(
         (snapshot) => snapshot.priceChange24h !== null,
       ).length,
+      statsSnapshotsPruned,
       snapshotsPruned,
     };
 

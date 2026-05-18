@@ -25,10 +25,10 @@ model BagsToken {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  pool      BagsPool?
-  creators  TokenCreator[]
+  pool               BagsPool?
+  creators           TokenCreator[]
   leaderboardEntries MarketLeaderboardEntry[]
-  snapshots TokenMarketSnapshot[]
+  snapshots          TokenMarketSnapshot[]
 
   @@index([symbol])
   @@index([name])
@@ -68,32 +68,32 @@ model TokenCreator {
 
   token BagsToken @relation(fields: [tokenMint], references: [tokenMint], onDelete: Cascade)
 
-  @@index([tokenMint])
   @@unique([tokenMint, wallet])
+  @@index([tokenMint])
 }
 
 model MarketLeaderboardEntry {
-  id         String   @id @default(cuid())
-  kind       String
-  rank       Int
-  tokenMint  String
-  name       String
-  symbol     String
-  image      String?
-  metric     String
-  score      Float
-  price      Float?
-  marketCap  Float?
-  volume24h  Float?
-  change1h   Float?
-  change24h  Float?
-  change7d   Float?
-  sparkline  Json
-  label      String
-  href       String
-  source     String   @default("bags")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id        String   @id @default(cuid())
+  kind      String
+  rank      Int
+  tokenMint String
+  name      String
+  symbol    String
+  image     String?
+  metric    String
+  score     Float
+  price     Float?
+  marketCap Float?
+  volume24h Float?
+  change1h  Float?
+  change24h Float?
+  change7d  Float?
+  sparkline Json
+  label     String
+  href      String
+  source    String   @default("bags")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   token BagsToken @relation(fields: [tokenMint], references: [tokenMint], onDelete: Cascade)
 
@@ -131,6 +131,19 @@ model TokenMarketSnapshot {
   token BagsToken @relation(fields: [tokenMint], references: [tokenMint], onDelete: Cascade)
 
   @@index([tokenMint, capturedAt])
+  @@index([capturedAt])
+}
+
+model MarketStatsSnapshot {
+  id             String   @id @default(cuid())
+  source         String   @default("bags")
+  coins          Int
+  pools          Int
+  totalMarketCap Float?
+  totalVolume24h Float?
+  capturedAt     DateTime @default(now())
+
+  @@index([source, capturedAt])
   @@index([capturedAt])
 }
 

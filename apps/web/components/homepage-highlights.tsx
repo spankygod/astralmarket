@@ -5,25 +5,82 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
-import type { BagsMarketItem } from "@/lib/bags-api";
-import { formatMarketCap, formatPercent } from "@/lib/market-format";
+import type { BagsMarketData, BagsMarketItem } from "@/lib/bags-api";
+import {
+  formatFullCurrency,
+  formatMarketCap,
+  formatPercent,
+} from "@/lib/market-format";
 
 const buildOverviewCards = ({
+  statsHistory,
   totalMarketCap,
   totalVolume24h,
 }: {
+  statsHistory: BagsMarketData["stats"]["history"];
   totalMarketCap?: number | null;
   totalVolume24h?: number | null;
 }) => [
   {
+    history: statsHistory
+      .map((snapshot) => snapshot.totalMarketCap)
+      .filter((value): value is number => Number.isFinite(value)),
     title: "Total Market Cap",
-    value: formatMarketCap(totalMarketCap),
+    value: formatFullCurrency(totalMarketCap),
   },
   {
+    history: statsHistory
+      .map((snapshot) => snapshot.totalVolume24h)
+      .filter((value): value is number => Number.isFinite(value)),
     title: "24h Trading Volume",
-    value: formatMarketCap(totalVolume24h),
+    value: formatFullCurrency(totalVolume24h),
   },
 ];
+
+function OverviewSparkline({ points }: { points: number[] }) {
+  const chartPoints =
+    points.length >= 2
+      ? points
+      : points.length === 1
+        ? [points[0] as number, points[0] as number]
+        : [];
+
+  if (chartPoints.length < 2) {
+    return <div aria-hidden="true" className="h-[46px] w-[138px]" />;
+  }
+
+  const width = 138;
+  const height = 46;
+  const min = Math.min(...chartPoints);
+  const max = Math.max(...chartPoints);
+  const span = Math.max(max - min, 1);
+  const path = chartPoints
+    .map((pointValue, index) => {
+      const point = pointValue as number;
+      const x = (index / (chartPoints.length - 1)) * width;
+      const y = height - ((point - min) / span) * height;
+
+      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-[46px] w-[138px] text-green-400"
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      <path
+        d={path}
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+      />
+    </svg>
+  );
+}
 
 function TrendingMetric({
   change24h,
@@ -161,16 +218,19 @@ function MarketList({
 
 function OverviewPanel({
   gainers,
+  statsHistory,
   totalMarketCap,
   totalVolume24h,
   trending,
 }: {
   gainers: BagsMarketItem[];
+  statsHistory: BagsMarketData["stats"]["history"];
   totalMarketCap?: number | null;
   totalVolume24h?: number | null;
   trending: BagsMarketItem[];
 }) {
   const overviewCards = buildOverviewCards({
+    statsHistory,
     totalMarketCap,
     totalVolume24h,
   });
@@ -189,9 +249,7 @@ function OverviewPanel({
               </p>
               <p className="mt-2 text-sm text-zinc-300">{card.title}</p>
             </div>
-            <span className="rounded-md border border-[#242424] px-2 py-1 text-xs font-semibold text-zinc-400">
-              Live cache
-            </span>
+            <OverviewSparkline points={card.history} />
           </div>
         ))}
       </div>
@@ -205,12 +263,14 @@ function OverviewPanel({
 export function HomepageHighlights({
   gainerRows,
   launchCount,
+  statsHistory = [],
   totalMarketCap,
   totalVolume24h,
   trendingRows,
 }: {
   gainerRows: BagsMarketItem[];
   launchCount: string;
+  statsHistory?: BagsMarketData["stats"]["history"];
   totalMarketCap?: number | null;
   totalVolume24h?: number | null;
   trendingRows: BagsMarketItem[];
@@ -266,6 +326,7 @@ export function HomepageHighlights({
         <div className="mt-8">
           <OverviewPanel
             gainers={gainerRows}
+            statsHistory={statsHistory}
             totalMarketCap={totalMarketCap}
             totalVolume24h={totalVolume24h}
             trending={trendingRows}

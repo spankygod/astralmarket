@@ -73,6 +73,7 @@ export default async function Home({
             }
             totalMarketCap={bagsMarket?.stats.totalMarketCap}
             totalVolume24h={bagsMarket?.stats.totalVolume24h}
+            statsHistory={bagsMarket?.stats.history}
             trendingRows={trendingRows}
           />
 

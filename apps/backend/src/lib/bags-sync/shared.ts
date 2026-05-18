@@ -46,6 +46,7 @@ export type BagsSyncResult = {
     derivedPriceChanges: number;
     priceChanges1h: number;
     priceChanges24h: number;
+    statsSnapshotsPruned: number;
     snapshotsPruned: number;
   };
 };

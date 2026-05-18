@@ -144,6 +144,7 @@ export const buildMarketStats = (feed: BagsLaunch[], pools: BagsPool[]) => {
     quoteMint: env.priceQuoteMint,
     totalMarketCap: null,
     totalVolume24h: null,
+    history: [],
   };
 };
 

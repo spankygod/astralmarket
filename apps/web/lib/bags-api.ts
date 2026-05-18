@@ -23,6 +23,11 @@ export type BagsCategoryData = {
     quoteMint: string;
     totalMarketCap: number | null;
     totalVolume24h: number | null;
+    history: Array<{
+      capturedAt: string;
+      totalMarketCap: number | null;
+      totalVolume24h: number | null;
+    }>;
   };
   launches: BagsLaunch[];
 };

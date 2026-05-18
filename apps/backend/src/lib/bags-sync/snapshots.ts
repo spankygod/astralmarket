@@ -47,9 +47,7 @@ export const getHistoricalPriceReferences = async (
   const referenceRows = await Promise.all(
     priceChangeWindows.map(async (window) => {
       const cutoff = new Date(capturedAt.getTime() - window.ageMs);
-      const oldestReferenceAt = new Date(
-        cutoff.getTime() - 6 * 60 * 60 * 1000,
-      );
+      const oldestReferenceAt = new Date(cutoff.getTime() - 6 * 60 * 60 * 1000);
 
       return prisma.$queryRaw<
         Array<{
@@ -110,4 +108,20 @@ export const pruneExpiredMarketSnapshots = async (
   }
 
   return totalDeleted;
+};
+
+export const pruneExpiredMarketStatsSnapshots = async (
+  prisma: PrismaClient,
+  capturedAt: Date,
+) => {
+  const retentionMs = env.marketSnapshotRetentionDays * 24 * 60 * 60 * 1000;
+  const cutoff = new Date(capturedAt.getTime() - retentionMs);
+
+  return prisma.marketStatsSnapshot.deleteMany({
+    where: {
+      capturedAt: {
+        lt: cutoff,
+      },
+    },
+  });
 };
