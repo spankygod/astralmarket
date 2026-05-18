@@ -66,11 +66,6 @@ export default async function Home({
         <div className="min-w-0 px-6 pb-10 pt-32 lg:px-7">
           <HomepageHighlights
             gainerRows={gainerRows}
-            launchCount={
-              bagsCategory
-                ? bagsCategory.stats.launches.toLocaleString()
-                : "recent"
-            }
             totalMarketCap={bagsMarket?.stats.totalMarketCap}
             totalVolume24h={bagsMarket?.stats.totalVolume24h}
             statsHistory={bagsMarket?.stats.history}

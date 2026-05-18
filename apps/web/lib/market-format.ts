@@ -82,6 +82,14 @@ export const formatFullCurrency = (value?: number | null) => {
   })}`;
 };
 
+export const formatMillionMarketCap = (value?: number | null) => {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "-";
+  }
+
+  return `$${trimTrailingZeros((value / 1_000_000).toFixed(2))} million`;
+};
+
 export const formatPercent = (value?: number | null) => {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return "-";

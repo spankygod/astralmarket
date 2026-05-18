@@ -9,8 +9,53 @@ import type { BagsMarketData, BagsMarketItem } from "@/lib/bags-api";
 import {
   formatFullCurrency,
   formatMarketCap,
+  formatMillionMarketCap,
   formatPercent,
 } from "@/lib/market-format";
+
+const oneDayMs = 24 * 60 * 60 * 1000;
+
+const getMarketCapChange24h = (
+  statsHistory: BagsMarketData["stats"]["history"],
+  totalMarketCap?: number | null,
+) => {
+  const points = statsHistory
+    .map((snapshot) => ({
+      timestamp: new Date(snapshot.capturedAt).getTime(),
+      value: snapshot.totalMarketCap,
+    }))
+    .filter(
+      (
+        point,
+      ): point is {
+        timestamp: number;
+        value: number;
+      } => Number.isFinite(point.timestamp) && Number.isFinite(point.value),
+    )
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const latestPoint = points.at(-1);
+  const currentValue =
+    totalMarketCap !== null &&
+    totalMarketCap !== undefined &&
+    Number.isFinite(totalMarketCap)
+      ? totalMarketCap
+      : latestPoint?.value;
+
+  if (currentValue === undefined || currentValue === null || !latestPoint) {
+    return null;
+  }
+
+  const referenceAt = latestPoint.timestamp - oneDayMs;
+  const referencePoint = [...points]
+    .reverse()
+    .find((point) => point.timestamp <= referenceAt && point.value > 0);
+
+  if (!referencePoint) {
+    return null;
+  }
+
+  return ((currentValue - referencePoint.value) / referencePoint.value) * 100;
+};
 
 const buildOverviewCards = ({
   statsHistory,
@@ -262,37 +307,56 @@ function OverviewPanel({
 
 export function HomepageHighlights({
   gainerRows,
-  launchCount,
   statsHistory = [],
   totalMarketCap,
   totalVolume24h,
   trendingRows,
 }: {
   gainerRows: BagsMarketItem[];
-  launchCount: string;
   statsHistory?: BagsMarketData["stats"]["history"];
   totalMarketCap?: number | null;
   totalVolume24h?: number | null;
   trendingRows: BagsMarketItem[];
 }) {
   const [showHighlights, setShowHighlights] = useState(true);
+  const marketCapLabel = formatMillionMarketCap(totalMarketCap);
+  const ecosystemChange24h = getMarketCapChange24h(
+    statsHistory,
+    totalMarketCap,
+  );
+  const ecosystemChangeIsNegative = (ecosystemChange24h ?? 0) < 0;
+  const EcosystemChangeIcon = ecosystemChangeIsNegative ? ArrowDown : ArrowUp;
 
   return (
     <section id="bags-overview">
       <div className="flex items-end justify-between gap-6">
         <div>
           <h1 className="text-2xl font-bold text-white">
-            Bags.fm Launches by Pool Activity
+            Bags Ecosystem by Market Cap
           </h1>
-          <p className="mt-2 text-sm text-zinc-300">
-            The Bags category is tracking {launchCount} launches across live DBC
-            pools and migrated DAMM v2 markets.{" "}
-            <a
-              className="font-semibold text-white underline"
-              href="#leaderboard"
-            >
-              Read more
-            </a>
+          <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-zinc-300">
+            <span>
+              The global Bags ecosystem market cap today is{" "}
+              {marketCapLabel === "-" ? "not available" : marketCapLabel}
+            </span>
+            {ecosystemChange24h === null ? (
+              <span>with 24h change pending.</span>
+            ) : (
+              <>
+                <span>, a</span>
+                <span
+                  className={
+                    ecosystemChangeIsNegative
+                      ? "inline-flex items-center gap-1 font-semibold text-red-400"
+                      : "inline-flex items-center gap-1 font-semibold text-green-400"
+                  }
+                >
+                  <EcosystemChangeIcon className="size-3.5" />
+                  {Math.abs(ecosystemChange24h).toFixed(1)}%
+                </span>
+                <span>change in the last 24 hours.</span>
+              </>
+            )}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2 text-sm font-semibold text-zinc-100">
