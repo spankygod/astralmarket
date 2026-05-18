@@ -22,6 +22,7 @@ export type BagsLaunchView = {
   pool: BagsPool | null;
   migrationStatus: "migrated" | "dbc" | "launching";
   bagsUrl: string;
+  createdAt?: Date;
   updatedAt?: Date;
 };
 

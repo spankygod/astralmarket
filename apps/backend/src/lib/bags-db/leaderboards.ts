@@ -70,6 +70,7 @@ const buildLeaderboardEntry = (token: TokenWithLeaderboard, index: number) => {
   );
 
   return {
+    createdAt: token.createdAt,
     launch,
     gainerDelta,
     latestSignal,

@@ -24,6 +24,7 @@ const referenceToleranceMs = 2 * 60 * 60 * 1000;
 const maxSparklinePoints = 120;
 
 type SyncLeaderboardEntry = {
+  createdAt: Date | null;
   launch: BagsLaunchView;
   latestSignal: number;
   latestSnapshot: SnapshotRow;
@@ -281,6 +282,23 @@ export const refreshMarketLeaderboardCache = async (
   const launchesByMint = new Map(
     launches.map((launch) => [launch.tokenMint, launch]),
   );
+  const tokenCreatedAtRows =
+    launches.length === 0
+      ? []
+      : await prisma.bagsToken.findMany({
+          where: {
+            tokenMint: {
+              in: launches.map((launch) => launch.tokenMint),
+            },
+          },
+          select: {
+            tokenMint: true,
+            createdAt: true,
+          },
+        });
+  const tokenCreatedAtByMint = new Map(
+    tokenCreatedAtRows.map((token) => [token.tokenMint, token.createdAt]),
+  );
   const entries = launches
     .map((launch, index): SyncLeaderboardEntry | null => {
       const latestSnapshot = snapshotsByMint.get(launch.tokenMint);
@@ -297,6 +315,10 @@ export const refreshMarketLeaderboardCache = async (
       );
 
       return {
+        createdAt:
+          tokenCreatedAtByMint.get(launch.tokenMint) ??
+          launch.createdAt ??
+          null,
         launch,
         latestSignal,
         latestSnapshot,

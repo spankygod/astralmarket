@@ -21,6 +21,7 @@ export const tokenWithPoolSelect = {
   launchSignature: true,
   uri: true,
   migrationStatus: true,
+  createdAt: true,
   updatedAt: true,
   pool: {
     select: poolSelect,
@@ -45,6 +46,7 @@ export const leaderboardSnapshotSelect = {
   price: true,
   marketCap: true,
   volume24h: true,
+  liquidityUsd: true,
   priceChange1h: true,
   priceChange24h: true,
 } satisfies Prisma.TokenMarketSnapshotSelect;
@@ -173,6 +175,7 @@ export const tokenToLaunchView = (token: TokenWithPool): BagsLaunchView => ({
       ? token.migrationStatus
       : "launching",
   bagsUrl: `https://bags.fm/${token.tokenMint}`,
+  createdAt: token.createdAt,
   updatedAt: token.updatedAt,
 });
 

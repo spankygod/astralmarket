@@ -1,17 +1,30 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { rankMarketCapLeaderboard, rankTopGainers } from "./bags-leaderboards";
+import {
+  rankMarketCapLeaderboard,
+  rankTopGainers,
+  rankTrendingTokens,
+} from "./bags-leaderboards";
+
+const oldEnoughCreatedAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+const freshCreatedAt = new Date(Date.now() - 60 * 60 * 1000);
 
 const entry = (
   id: string,
   marketCap: number | null,
   priceChange24h: number | null,
   trendScore: number,
+  options: {
+    createdAt?: Date;
+    liquidityUsd?: number | null;
+  } = {},
 ) => ({
+  createdAt: options.createdAt ?? oldEnoughCreatedAt,
   id,
   latestSignal: trendScore,
   latestSnapshot: {
+    liquidityUsd: options.liquidityUsd ?? 50_000,
     marketCap,
     priceChange24h,
   },
@@ -53,5 +66,66 @@ test("top gainers only includes rows with real 24h change", () => {
   assert.deepEqual(
     ranked.map((item) => item.id),
     ["positive", "negative"],
+  );
+});
+
+test("top gainers excludes fresh launches from discovery ranking", () => {
+  const ranked = rankTopGainers([
+    entry("fresh-pump", 1_000_000, 900, 100, {
+      createdAt: freshCreatedAt,
+      liquidityUsd: 100_000,
+    }),
+    entry("seasoned-gainer", 100_000, 25, 1),
+  ]);
+
+  assert.deepEqual(
+    ranked.map((item) => item.id),
+    ["seasoned-gainer"],
+  );
+});
+
+test("top gainers excludes low-liquidity launches", () => {
+  const ranked = rankTopGainers([
+    entry("thin-liquidity", 1_000_000, 900, 100, {
+      liquidityUsd: 1_000,
+    }),
+    entry("real-depth", 100_000, 25, 1),
+  ]);
+
+  assert.deepEqual(
+    ranked.map((item) => item.id),
+    ["real-depth"],
+  );
+});
+
+test("trending excludes launches without enough age and depth", () => {
+  const ranked = rankTrendingTokens([
+    entry("fresh-trend", 1_000_000, 900, 100, {
+      createdAt: freshCreatedAt,
+      liquidityUsd: 100_000,
+    }),
+    entry("thin-trend", 1_000_000, 900, 99, {
+      liquidityUsd: 1_000,
+    }),
+    entry("seasoned-trend", 100_000, 25, 1),
+  ]);
+
+  assert.deepEqual(
+    ranked.map((item) => item.id),
+    ["seasoned-trend"],
+  );
+});
+
+test("market cap leaderboard demotes suspicious market depth", () => {
+  const ranked = rankMarketCapLeaderboard([
+    entry("thin-high-cap", 1_000_000, 900, 100, {
+      liquidityUsd: 1_000,
+    }),
+    entry("real-market", 100_000, 25, 1),
+  ]);
+
+  assert.deepEqual(
+    ranked.map((item) => item.id),
+    ["real-market", "thin-high-cap"],
   );
 });

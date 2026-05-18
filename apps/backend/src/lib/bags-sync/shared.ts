@@ -21,6 +21,7 @@ export type SnapshotRow = Prisma.TokenMarketSnapshotCreateManyInput & {
   price: number | null;
   marketCap: number | null;
   volume24h: number | null;
+  liquidityUsd: number | null;
   priceChange1h: number | null;
   priceChange24h: number | null;
 };
