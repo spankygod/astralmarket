@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -17,6 +17,7 @@ import type {
 
 import { CreatorCell } from "./creator-cell";
 import { ChangeText } from "./market-text";
+import { ShareTokenButton } from "./share-token-button";
 import { Sparkline } from "./sparkline";
 
 const leaderboardColumns = [
@@ -306,7 +307,7 @@ export function LeaderboardTable({
                 key={`${token.symbol}-${token.tokenMint}`}
               >
                 <TableCell className="w-11 px-3">
-                  <Star className="size-4 text-zinc-100" />
+                  <ShareTokenButton token={token} />
                 </TableCell>
                 <TableCell className="w-14 px-3 font-mono text-zinc-100">
                   {token.rank}
