@@ -10,11 +10,10 @@ import {
 } from "@/lib/market-format";
 
 const unavailableGlobalStats: Array<[string, string, string?]> = [
-  ["Bags Launches", "N/A"],
-  ["Active Pools", "N/A"],
-  ["Live DBC", "N/A"],
-  ["Migrated", "N/A"],
-  ["Quote Mint", "N/A"],
+  ["Coins", "N/A"],
+  ["Pools", "N/A"],
+  ["Marketcap", "N/A"],
+  ["24h Total Vol", "N/A"],
 ];
 
 export const leaderboardPageSize = 50;
@@ -46,9 +45,6 @@ export type BagsTableRow = {
 };
 
 export type BagsMarketPagination = BagsMarketData["pagination"];
-
-const shortenKey = (value: string) =>
-  value.length > 13 ? `${value.slice(0, 6)}...${value.slice(-5)}` : value;
 
 const buildSyntheticSparkline = (
   score: number,
@@ -107,11 +103,10 @@ export const buildGlobalStats = (
   }
 
   return [
-    ["Bags Launches", category.stats.launches.toLocaleString()],
-    ["Active Pools", category.stats.activePools.toLocaleString()],
-    ["Live DBC", category.stats.liveDbcPools.toLocaleString()],
-    ["Migrated", `${category.stats.migratedPools.toLocaleString()} pools`],
-    ["Quote Mint", shortenKey(category.stats.quoteMint)],
+    ["Coins", category.stats.launches.toLocaleString()],
+    ["Pools", category.stats.activePools.toLocaleString()],
+    ["Marketcap", formatMarketCap(category.stats.totalMarketCap)],
+    ["24h Total Vol", formatMarketCap(category.stats.totalVolume24h)],
   ];
 };
 

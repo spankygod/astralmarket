@@ -21,6 +21,8 @@ export type BagsCategoryData = {
     migratedPools: number;
     liveDbcPools: number;
     quoteMint: string;
+    totalMarketCap: number | null;
+    totalVolume24h: number | null;
   };
   launches: BagsLaunch[];
 };

@@ -142,6 +142,8 @@ export const buildMarketStats = (feed: BagsLaunch[], pools: BagsPool[]) => {
     migratedPools,
     liveDbcPools: Math.max(pools.length - migratedPools, 0),
     quoteMint: env.priceQuoteMint,
+    totalMarketCap: null,
+    totalVolume24h: null,
   };
 };
 

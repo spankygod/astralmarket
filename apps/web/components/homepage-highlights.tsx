@@ -8,98 +8,22 @@ import { useState } from "react";
 import type { BagsMarketItem } from "@/lib/bags-api";
 import { formatMarketCap, formatPercent } from "@/lib/market-format";
 
-const overviewCards = [
+const buildOverviewCards = ({
+  totalMarketCap,
+  totalVolume24h,
+}: {
+  totalMarketCap?: number | null;
+  totalVolume24h?: number | null;
+}) => [
   {
-    title: "Quote Depth",
-    value: "$18,642,880",
-    note: "+8.2%",
-    sparkline: [8, 19, 24, 23, 27, 25, 30, 29, 36, 39, 57, 57],
+    title: "Total Market Cap",
+    value: formatMarketCap(totalMarketCap),
   },
   {
     title: "24h Trading Volume",
-    value: "$4,271,940",
-    note: "+12.4%",
-    sparkline: [6, 6, 9, 8, 10, 9, 8, 10, 8, 12, 16, 29, 35],
+    value: formatMarketCap(totalVolume24h),
   },
 ];
-
-function Sparkline({
-  points,
-  negative = false,
-  width = 148,
-  height = 54,
-}: {
-  points: number[];
-  negative?: boolean;
-  width?: number;
-  height?: number;
-}) {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const span = Math.max(max - min, 1);
-  const path = points
-    .map((point, index) => {
-      const x = (index / (points.length - 1)) * width;
-      const y = height - ((point - min) / span) * height;
-
-      return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
-
-  return (
-    <svg
-      aria-hidden="true"
-      className={negative ? "text-red-500" : "text-green-400"}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
-      width={width}
-    >
-      <path
-        d={path}
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function OverviewMetric({ value }: { value: string }) {
-  const normalizedValue = value.trim();
-
-  if (
-    normalizedValue === "N/A" ||
-    normalizedValue === "N/A%" ||
-    normalizedValue === "-"
-  ) {
-    return <span className="text-slate-500">-</span>;
-  }
-
-  if (!normalizedValue.endsWith("%")) {
-    return (
-      <span className="font-mono text-sm font-medium text-zinc-100">
-        {normalizedValue}
-      </span>
-    );
-  }
-
-  const negative = normalizedValue.startsWith("-");
-
-  return (
-    <span
-      className={
-        negative
-          ? "font-medium text-red-400"
-          : "inline-flex items-center gap-1 font-medium text-green-400"
-      }
-    >
-      {negative ? null : <ArrowUp className="size-3" />}
-      {normalizedValue.replace("+", "")}
-    </span>
-  );
-}
 
 function TrendingMetric({
   change24h,
@@ -237,11 +161,20 @@ function MarketList({
 
 function OverviewPanel({
   gainers,
+  totalMarketCap,
+  totalVolume24h,
   trending,
 }: {
   gainers: BagsMarketItem[];
+  totalMarketCap?: number | null;
+  totalVolume24h?: number | null;
   trending: BagsMarketItem[];
 }) {
+  const overviewCards = buildOverviewCards({
+    totalMarketCap,
+    totalVolume24h,
+  });
+
   return (
     <div className="grid gap-2 lg:grid-cols-[450px_minmax(0,1fr)_minmax(0,1fr)]">
       <div className="grid gap-2">
@@ -254,11 +187,11 @@ function OverviewPanel({
               <p className="font-mono text-xl font-bold text-slate-50">
                 {card.value}
               </p>
-              <p className="mt-2 text-sm text-zinc-300">
-                {card.title} <OverviewMetric value={card.note} />
-              </p>
+              <p className="mt-2 text-sm text-zinc-300">{card.title}</p>
             </div>
-            <Sparkline points={card.sparkline} width={155} height={58} />
+            <span className="rounded-md border border-[#242424] px-2 py-1 text-xs font-semibold text-zinc-400">
+              Live cache
+            </span>
           </div>
         ))}
       </div>
@@ -272,10 +205,14 @@ function OverviewPanel({
 export function HomepageHighlights({
   gainerRows,
   launchCount,
+  totalMarketCap,
+  totalVolume24h,
   trendingRows,
 }: {
   gainerRows: BagsMarketItem[];
   launchCount: string;
+  totalMarketCap?: number | null;
+  totalVolume24h?: number | null;
   trendingRows: BagsMarketItem[];
 }) {
   const [showHighlights, setShowHighlights] = useState(true);
@@ -327,7 +264,12 @@ export function HomepageHighlights({
 
       {showHighlights ? (
         <div className="mt-8">
-          <OverviewPanel gainers={gainerRows} trending={trendingRows} />
+          <OverviewPanel
+            gainers={gainerRows}
+            totalMarketCap={totalMarketCap}
+            totalVolume24h={totalVolume24h}
+            trending={trendingRows}
+          />
         </div>
       ) : null}
     </section>

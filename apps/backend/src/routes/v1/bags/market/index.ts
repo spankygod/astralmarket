@@ -70,6 +70,8 @@ const bagsMarketResponseSchema = z.object({
       migratedPools: z.number(),
       liveDbcPools: z.number(),
       quoteMint: z.string(),
+      totalMarketCap: z.number().nullable(),
+      totalVolume24h: z.number().nullable(),
     }),
     trending: z.array(marketItemSchema),
     topGainers: z.array(marketItemSchema),

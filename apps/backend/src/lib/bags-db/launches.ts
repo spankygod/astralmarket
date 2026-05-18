@@ -31,17 +31,27 @@ export const getCachedLaunches = async (
 };
 
 export const getCachedMarketStats = async (prisma: PrismaClient) => {
-  const [launches, activePools, migratedPools] = await Promise.all([
-    prisma.bagsToken.count(),
-    prisma.bagsPool.count(),
-    prisma.bagsPool.count({
-      where: {
-        dammV2PoolKey: {
-          not: null,
+  const [launches, activePools, migratedPools, marketTotals] =
+    await Promise.all([
+      prisma.bagsToken.count(),
+      prisma.bagsPool.count(),
+      prisma.bagsPool.count({
+        where: {
+          dammV2PoolKey: {
+            not: null,
+          },
         },
-      },
-    }),
-  ]);
+      }),
+      prisma.marketLeaderboardEntry.aggregate({
+        where: {
+          kind: "market",
+        },
+        _sum: {
+          marketCap: true,
+          volume24h: true,
+        },
+      }),
+    ]);
 
   return {
     launches,
@@ -49,5 +59,7 @@ export const getCachedMarketStats = async (prisma: PrismaClient) => {
     migratedPools,
     liveDbcPools: Math.max(activePools - migratedPools, 0),
     quoteMint: env.priceQuoteMint,
+    totalMarketCap: marketTotals._sum.marketCap ?? null,
+    totalVolume24h: marketTotals._sum.volume24h ?? null,
   };
 };

@@ -71,6 +71,8 @@ export default async function Home({
                 ? bagsCategory.stats.launches.toLocaleString()
                 : "recent"
             }
+            totalMarketCap={bagsMarket?.stats.totalMarketCap}
+            totalVolume24h={bagsMarket?.stats.totalVolume24h}
             trendingRows={trendingRows}
           />
 
