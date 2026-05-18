@@ -154,6 +154,71 @@ function PaginationControls({
   );
 }
 
+function MobileLeaderboard({
+  isTopEarners,
+  tokens,
+}: {
+  isTopEarners: boolean;
+  tokens: BagsTableRow[];
+}) {
+  const metricLabel = isTopEarners ? "Amount" : "Market Cap";
+
+  return (
+    <div className="md:hidden">
+      <div className="grid grid-cols-[minmax(0,1fr)_120px] border-b border-[#1f1f1f] px-4 py-3 text-xs font-bold text-zinc-100">
+        <span>Coins</span>
+        <span className="text-right">{metricLabel}</span>
+      </div>
+      <div className="divide-y divide-[#1a1a1a]">
+        {tokens.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-slate-500">
+            No rows available.
+          </p>
+        ) : (
+          tokens.map((token) => (
+            <Link
+              className="grid min-h-[66px] grid-cols-[minmax(0,1fr)_120px] items-center gap-3 px-4 py-3 hover:bg-[#0a0a0a]"
+              href={`/coins/${encodeURIComponent(token.tokenMint)}`}
+              key={`${token.symbol}-${token.tokenMint}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="w-7 shrink-0 font-mono text-sm text-zinc-400">
+                  {token.rank}
+                </span>
+                {token.image ? (
+                  <Image
+                    alt=""
+                    className="size-8 shrink-0 rounded-full object-cover"
+                    height={32}
+                    unoptimized
+                    src={token.image}
+                    width={32}
+                  />
+                ) : (
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-100 text-xs font-bold text-slate-950">
+                    {token.badge}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-zinc-100">
+                    {token.name}
+                  </p>
+                  <p className="truncate text-xs text-zinc-500">
+                    {token.symbol}
+                  </p>
+                </div>
+              </div>
+              <span className="text-right font-mono text-sm font-semibold tabular-nums text-zinc-50">
+                {isTopEarners ? token.amount : token.marketCap}
+              </span>
+            </Link>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function LeaderboardTable({
   metricColumnLabel = "Market Cap",
   pageSize,
@@ -181,11 +246,12 @@ export function LeaderboardTable({
 
   return (
     <div className="overflow-hidden rounded-lg border border-[#1a1a1a] bg-[#000000]">
+      <MobileLeaderboard isTopEarners={isTopEarners} tokens={tokens} />
       <Table
         className={
           isTopEarners
-            ? "min-w-[940px] table-fixed"
-            : "min-w-[1190px] table-fixed"
+            ? "hidden min-w-[940px] table-fixed md:table"
+            : "hidden min-w-[1190px] table-fixed md:table"
         }
       >
         {isTopEarners ? (
