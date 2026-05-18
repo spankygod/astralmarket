@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import type { BagsTableRow } from "@/lib/home-market-mappers";
 
 const cardSize = 1080;
+const canonicalOrigin = "https://www.astralmarket.xyz";
 const fallbackCardFont = "'Poppins', Arial, sans-serif";
 const copiedResetMs = 1600;
 const maxShareCardRank = 100;
@@ -51,13 +52,25 @@ const getChangeColor = (value: string) => {
 
 const getShareText = (token: BagsTableRow, tokenUrl: string) =>
   [
-    `${token.name} (${token.symbol}) is #${token.rank} on Astralmarket.`,
-    `Market Cap: ${token.marketCap}`,
-    `24h: ${token.h24}`,
-    `24h Volume: ${token.volume24h}`,
+    `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens on the bags ecosystem by using the platform!`,
     "",
     tokenUrl,
   ].join("\n");
+
+const getShareOrigin = () => {
+  if (typeof window === "undefined") {
+    return canonicalOrigin;
+  }
+
+  if (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  ) {
+    return window.location.origin;
+  }
+
+  return canonicalOrigin;
+};
 
 const getCardTimestamp = () =>
   new Date().toLocaleString(undefined, {
@@ -370,11 +383,7 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
   const [open, setOpen] = useState(false);
   const isShareCardEligible = token.rank <= maxShareCardRank;
   const tokenUrl = useMemo(() => {
-    if (typeof window === "undefined") {
-      return `/coins/${encodeURIComponent(token.tokenMint)}`;
-    }
-
-    return `${window.location.origin}/coins/${encodeURIComponent(
+    return `${getShareOrigin()}/coins/${encodeURIComponent(
       token.tokenMint,
     )}`;
   }, [token.tokenMint]);
