@@ -52,7 +52,7 @@ const getChangeColor = (value: string) => {
 
 const getShareText = (token: BagsTableRow, tokenUrl: string) =>
   [
-    `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens on the bags ecosystem by using the platform!`,
+    `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens in the @BagsApp ecosystem using Astralmarket!`,
     "",
     tokenUrl,
   ].join("\n");

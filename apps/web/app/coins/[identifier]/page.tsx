@@ -50,7 +50,7 @@ export async function generateMetadata({
   const symbol = getDisplaySymbol(coin);
   const title = `${coin.token.name} (${symbol}) | Astralmarket`;
   const rankLabel = getRankLabel(coin);
-  const description = `${coin.token.name} (${symbol}) is ${rankLabel} on @0xastralmarket. Discover tokens on the bags ecosystem by using the platform!`;
+  const description = `${coin.token.name} (${symbol}) is ${rankLabel} on @0xastralmarket. Discover tokens in the @BagsApp ecosystem using Astralmarket!`;
   const canonicalUrl = `${siteUrl}/coins/${encodeURIComponent(
     coin.token.tokenMint,
   )}`;
