@@ -30,12 +30,8 @@ const getChangeColor = (value: string) => {
   return "#22c55e";
 };
 
-const getShareText = (token: BagsTableRow, tokenUrl: string) =>
-  [
-    `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens in the @BagsApp ecosystem using Astralmarket!`,
-    "",
-    tokenUrl,
-  ].join("\n");
+const getShareText = (token: BagsTableRow) =>
+  `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens in the @BagsApp ecosystem using Astralmarket!`;
 
 const getShareOrigin = () => {
   if (typeof window === "undefined") {
@@ -376,10 +372,7 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
       token.tokenMint,
     )}`;
   }, [token.tokenMint]);
-  const shareText = useMemo(() => getShareText(token, tokenUrl), [
-    token,
-    tokenUrl,
-  ]);
+  const shareText = useMemo(() => getShareText(token), [token]);
 
   const markCopied = (label: string) => {
     setCopiedLabel(label);
