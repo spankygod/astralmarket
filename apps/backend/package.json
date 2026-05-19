@@ -15,6 +15,8 @@
     "prisma:generate": "prisma generate",
     "sync:bags:dev": "tsx src/scripts/sync-bags.ts",
     "sync:bags": "pnpm run build:ts && node dist/src/scripts/sync-bags.js",
+    "sync:socials:dev": "tsx src/scripts/sync-socials.ts",
+    "sync:socials": "pnpm run build:ts && node dist/src/scripts/sync-socials.js",
     "test:ranking": "pnpm run build:ts && node --test dist/src/lib/bags-leaderboards.test.js",
     "start": "pnpm run build:ts && fastify start -l info dist/src/app.js",
     "watch:ts": "tsc -w"

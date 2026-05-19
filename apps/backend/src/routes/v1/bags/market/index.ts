@@ -209,7 +209,7 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
           fastify,
           {
             freshTtlSeconds: marketCacheFreshSeconds,
-            key: `bags:market:v5:limit:${limit}:page:${page}`,
+            key: `bags:market:v6:limit:${limit}:page:${page}`,
             staleTtlSeconds: marketCacheStaleSeconds,
           },
           async () => {

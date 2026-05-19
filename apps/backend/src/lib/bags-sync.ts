@@ -113,18 +113,42 @@ export const syncBagsMarket = async (
     ]);
     const launches = buildLaunchViews(feed, pools);
     const launchMints = new Set(launches.map((launch) => launch.tokenMint));
+    const existingPoolOnlySocials =
+      pools.length === 0
+        ? []
+        : await prisma.bagsToken.findMany({
+            where: {
+              tokenMint: {
+                in: pools.map((pool) => pool.tokenMint),
+              },
+            },
+            select: {
+              tokenMint: true,
+              twitter: true,
+              website: true,
+            },
+          });
+    const existingSocialsByMint = new Map(
+      existingPoolOnlySocials.map((token) => [token.tokenMint, token]),
+    );
     const poolOnlyLaunches = pools
       .filter((pool) => !launchMints.has(pool.tokenMint))
       .map(
-        (pool): BagsLaunchView => ({
-          name: pool.tokenMint,
-          symbol: "",
-          tokenMint: pool.tokenMint,
-          status: "POOL_ONLY",
-          pool,
-          migrationStatus: pool.dammV2PoolKey ? "migrated" : "dbc",
-          bagsUrl: `https://bags.fm/${pool.tokenMint}`,
-        }),
+        (pool): BagsLaunchView => {
+          const existingSocials = existingSocialsByMint.get(pool.tokenMint);
+
+          return {
+            name: pool.tokenMint,
+            symbol: "",
+            tokenMint: pool.tokenMint,
+            status: "POOL_ONLY",
+            twitter: existingSocials?.twitter,
+            website: existingSocials?.website,
+            pool,
+            migrationStatus: pool.dammV2PoolKey ? "migrated" : "dbc",
+            bagsUrl: `https://bags.fm/${pool.tokenMint}`,
+          };
+        },
       );
     const quoteResults = new Map<
       string,
@@ -159,6 +183,8 @@ export const syncBagsMarket = async (
         image: dexMarketData.image ?? launch.image,
         name: dexMarketData.name ?? launch.name,
         symbol: dexMarketData.symbol ?? launch.symbol,
+        twitter: launch.twitter ?? dexMarketData.twitter,
+        website: launch.website ?? dexMarketData.website,
       };
     });
 

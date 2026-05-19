@@ -8,6 +8,14 @@ type DexPair = {
   };
   info?: {
     imageUrl?: string;
+    socials?: Array<{
+      type?: string;
+      url?: string;
+    }>;
+    websites?: Array<{
+      label?: string;
+      url?: string;
+    }>;
   } | null;
   priceUsd?: string | null;
   priceChange?: {
@@ -56,7 +64,9 @@ export type DexMarketData = {
   priceChange6h: number | null;
   priceChange24h: number | null;
   symbol: string | null;
+  twitter: string | null;
   volume24h: number | null;
+  website: string | null;
   liquidityUsd: number | null;
 };
 
@@ -111,7 +121,12 @@ export const getDexScreenerMarketData = async (
       priceChange6h: pair.priceChange?.h6 ?? null,
       priceChange24h: pair.priceChange?.h24 ?? null,
       symbol: pair.baseToken?.symbol ?? null,
+      twitter:
+        pair.info?.socials?.find(
+          (social) => social.type?.toLowerCase() === "twitter",
+        )?.url ?? null,
       volume24h: pair.volume?.h24 ?? null,
+      website: pair.info?.websites?.at(0)?.url ?? null,
       liquidityUsd: pair.liquidity?.usd ?? null,
     });
   }

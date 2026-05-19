@@ -45,7 +45,7 @@ const getTwitterHandle = (value?: string | null) => {
 };
 
 const getShareText = (token: BagsTableRow) => {
-  const discoverySubject = getTwitterHandle(token.twitter) ?? "tokens";
+  const discoverySubject = getTwitterHandle(token.twitter) ?? token.name;
 
   return `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover ${discoverySubject} in the @BagsApp ecosystem using Astralmarket!`;
 };
