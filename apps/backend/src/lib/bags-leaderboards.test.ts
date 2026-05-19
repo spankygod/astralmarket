@@ -18,15 +18,18 @@ const entry = (
   options: {
     createdAt?: Date;
     liquidityUsd?: number | null;
+    volume24h?: number | null;
   } = {},
 ) => ({
   createdAt: options.createdAt ?? oldEnoughCreatedAt,
   id,
   latestSignal: trendScore,
   latestSnapshot: {
-    liquidityUsd: options.liquidityUsd ?? 50_000,
+    liquidityUsd:
+      options.liquidityUsd === undefined ? 50_000 : options.liquidityUsd,
     marketCap,
     priceChange24h,
+    volume24h: options.volume24h,
   },
   trendScore,
 });
@@ -69,7 +72,7 @@ test("top gainers only includes rows with real 24h change", () => {
   );
 });
 
-test("top gainers excludes fresh launches from discovery ranking", () => {
+test("top gainers can include fresh launches", () => {
   const ranked = rankTopGainers([
     entry("fresh-pump", 1_000_000, 900, 100, {
       createdAt: freshCreatedAt,
@@ -80,14 +83,14 @@ test("top gainers excludes fresh launches from discovery ranking", () => {
 
   assert.deepEqual(
     ranked.map((item) => item.id),
-    ["seasoned-gainer"],
+    ["fresh-pump", "seasoned-gainer"],
   );
 });
 
-test("top gainers excludes low-liquidity launches", () => {
+test("top gainers excludes thin liquidity rows", () => {
   const ranked = rankTopGainers([
     entry("thin-liquidity", 1_000_000, 900, 100, {
-      liquidityUsd: 1_000,
+      liquidityUsd: 100,
     }),
     entry("real-depth", 100_000, 25, 1),
   ]);
@@ -98,7 +101,7 @@ test("top gainers excludes low-liquidity launches", () => {
   );
 });
 
-test("trending excludes launches without enough age and depth", () => {
+test("trending uses lighter discovery rules than market cap ranking", () => {
   const ranked = rankTrendingTokens([
     entry("fresh-trend", 1_000_000, 900, 100, {
       createdAt: freshCreatedAt,
@@ -107,12 +110,16 @@ test("trending excludes launches without enough age and depth", () => {
     entry("thin-trend", 1_000_000, 900, 99, {
       liquidityUsd: 1_000,
     }),
+    entry("no-market-data", null, null, 1, {
+      liquidityUsd: null,
+      volume24h: null,
+    }),
     entry("seasoned-trend", 100_000, 25, 1),
   ]);
 
   assert.deepEqual(
     ranked.map((item) => item.id),
-    ["seasoned-trend"],
+    ["fresh-trend", "thin-trend", "seasoned-trend"],
   );
 });
 

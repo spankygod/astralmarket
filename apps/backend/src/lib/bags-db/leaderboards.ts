@@ -195,7 +195,7 @@ const toLeaderboardItem = (
   rank,
   name: entry.launch.name,
   symbol: entry.launch.symbol,
-  image: entry.launch.image,
+  image: entry.launch.image ?? null,
   tokenMint: entry.launch.tokenMint,
   metric,
   score: entry.latestSignal,
@@ -218,6 +218,7 @@ const toLeaderboardItem = (
         : "Fresh launch",
   href: `/coins/${encodeURIComponent(entry.launch.tokenMint)}`,
   source: "bags" as const,
+  creator: null,
 });
 
 const toCachedLeaderboardItem = (
@@ -264,6 +265,53 @@ const getTrendingMetric = (entry: ReturnType<typeof buildLeaderboardEntry>) => {
   }
 
   return "N/A";
+};
+
+const getFallbackSideLists = async (
+  prisma: PrismaClient,
+  sideListLimit: number,
+) => {
+  const tokens = await prisma.bagsToken.findMany({
+    select: tokenLeaderboardSelect,
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+  const entries = tokens.map(buildLeaderboardEntry);
+  const rankedTrending = rankTrendingTokens(entries).slice(0, sideListLimit);
+  const rankedTopGainers = rankTopGainers(entries).slice(0, sideListLimit);
+  const historyTokenMints = [
+    ...new Set(
+      [...rankedTrending, ...rankedTopGainers].map(
+        (entry) => entry.launch.tokenMint,
+      ),
+    ),
+  ];
+  const { historyByMint, referenceByMint } = await getSevenDayMarketHistory(
+    prisma,
+    historyTokenMints,
+  );
+
+  return {
+    trending: rankedTrending.map((entry, index) =>
+      toLeaderboardItem(
+        entry,
+        index + 1,
+        getTrendingMetric(entry),
+        historyByMint,
+        referenceByMint,
+      ),
+    ),
+    topGainers: rankedTopGainers.map((entry, index) =>
+      toLeaderboardItem(
+        entry,
+        index + 1,
+        `${entry.latestSnapshot?.priceChange24h?.toFixed(1) ?? "N/A"}%`,
+        historyByMint,
+        referenceByMint,
+      ),
+    ),
+  };
 };
 
 export const getCachedLeaderboards = async (
@@ -330,6 +378,24 @@ export const getCachedLeaderboards = async (
   ]);
 
   if (leaderboardTotal > 0) {
+    let trending = trendingRows.map((row) => toCachedLeaderboardItem(row));
+    let topGainers = topGainerRows.map((row) => toCachedLeaderboardItem(row));
+
+    if (trending.length === 0 || topGainers.length === 0) {
+      const fallbackSideLists = await getFallbackSideLists(
+        prisma,
+        options.sideListLimit,
+      );
+
+      if (trending.length === 0) {
+        trending = fallbackSideLists.trending;
+      }
+
+      if (topGainers.length === 0) {
+        topGainers = fallbackSideLists.topGainers;
+      }
+    }
+
     const topEarnerCreatorsByMint = await getHydratedCreatorsForRows(
       prisma,
       topEarnerRows,
@@ -346,8 +412,8 @@ export const getCachedLeaderboards = async (
     return {
       leaderboard: leaderboardRows.map((row) => toCachedLeaderboardItem(row)),
       leaderboardTotal,
-      trending: trendingRows.map((row) => toCachedLeaderboardItem(row)),
-      topGainers: topGainerRows.map((row) => toCachedLeaderboardItem(row)),
+      trending,
+      topGainers,
       topEarners,
     };
   }
@@ -359,14 +425,11 @@ export const getCachedLeaderboards = async (
     },
   });
   const entries = tokens.map(buildLeaderboardEntry);
-  const launchFeedEntries = entries.filter(
-    (entry) => entry.launch.status !== "POOL_ONLY",
-  );
-  const rankedTrending = rankTrendingTokens(launchFeedEntries).slice(
+  const rankedTrending = rankTrendingTokens(entries).slice(
     0,
     options.sideListLimit,
   );
-  const rankedTopGainers = rankTopGainers(launchFeedEntries).slice(
+  const rankedTopGainers = rankTopGainers(entries).slice(
     0,
     options.sideListLimit,
   );

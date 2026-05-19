@@ -2,6 +2,7 @@ export type RankingSnapshot = {
   liquidityUsd: number | null;
   marketCap: number | null;
   priceChange24h: number | null;
+  volume24h?: number | null;
 };
 
 export type RankingEntry = {
@@ -13,6 +14,7 @@ export type RankingEntry = {
 
 const minimumDiscoveryAgeHours = 24;
 const minimumDiscoveryLiquidityUsd = 10_000;
+const minimumTopGainerLiquidityUsd = 1_000;
 const maximumMarketCapLiquidityRatio = 200;
 
 const hoursSince = (date?: Date | null) =>
@@ -46,6 +48,29 @@ export const isDiscoveryRankEligible = (entry: RankingEntry) =>
   hoursSince(entry.createdAt) >= minimumDiscoveryAgeHours &&
   hasSaneMarketDepth(entry);
 
+const hasAnyMarketActivity = (entry: RankingEntry) =>
+  isFinitePositiveNumber(entry.latestSnapshot?.liquidityUsd) ||
+  isFinitePositiveNumber(entry.latestSnapshot?.volume24h) ||
+  isFinitePositiveNumber(entry.latestSnapshot?.marketCap);
+
+const hasTopGainerDepth = (entry: RankingEntry) => {
+  const liquidityUsd = entry.latestSnapshot?.liquidityUsd;
+
+  return (
+    isFinitePositiveNumber(liquidityUsd) &&
+    liquidityUsd >= minimumTopGainerLiquidityUsd
+  );
+};
+
+export const isTrendingEligible = (entry: RankingEntry) =>
+  hasAnyMarketActivity(entry);
+
+export const isTopGainerEligible = (entry: RankingEntry) =>
+  hasTopGainerDepth(entry) &&
+  entry.latestSnapshot?.priceChange24h !== null &&
+  entry.latestSnapshot?.priceChange24h !== undefined &&
+  Number.isFinite(entry.latestSnapshot.priceChange24h);
+
 const marketCapValue = (entry: RankingEntry) =>
   isDiscoveryRankEligible(entry) ? (entry.latestSnapshot?.marketCap ?? -1) : -1;
 
@@ -64,14 +89,12 @@ export const rankMarketCapLeaderboard = <T extends RankingEntry>(
 
 export const rankTrendingTokens = <T extends RankingEntry>(entries: T[]) =>
   entries
-    .filter(isDiscoveryRankEligible)
+    .filter(isTrendingEligible)
     .sort((a, b) => b.trendScore - a.trendScore);
 
 export const rankTopGainers = <T extends RankingEntry>(entries: T[]) =>
   entries
-    .filter(isDiscoveryRankEligible)
-    .filter((entry) => entry.latestSnapshot?.priceChange24h !== null)
-    .filter((entry) => entry.latestSnapshot?.priceChange24h !== undefined)
+    .filter(isTopGainerEligible)
     .sort(
       (a, b) =>
         change24hValue(b) - change24hValue(a) ||

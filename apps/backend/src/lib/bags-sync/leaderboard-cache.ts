@@ -326,9 +326,6 @@ export const refreshMarketLeaderboardCache = async (
       };
     })
     .filter((entry): entry is SyncLeaderboardEntry => entry !== null);
-  const launchFeedEntries = entries.filter(
-    (entry) => entry.launch.status !== "POOL_ONLY",
-  );
   const historyTokenMints = [
     ...new Set(entries.map((entry) => entry.launch.tokenMint)),
   ];
@@ -354,7 +351,7 @@ export const refreshMarketLeaderboardCache = async (
       referenceByMint,
     ),
   );
-  const trendingRows = rankTrendingTokens(launchFeedEntries)
+  const trendingRows = rankTrendingTokens(entries)
     .slice(0, cachedLeaderboardSideListLimit)
     .map((entry, index) =>
       toMarketLeaderboardRow(
@@ -366,7 +363,7 @@ export const refreshMarketLeaderboardCache = async (
         referenceByMint,
       ),
     );
-  const topGainerRows = rankTopGainers(launchFeedEntries)
+  const topGainerRows = rankTopGainers(entries)
     .slice(0, cachedLeaderboardSideListLimit)
     .map((entry, index) =>
       toMarketLeaderboardRow(
