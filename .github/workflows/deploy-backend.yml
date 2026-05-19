@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - apps/backend/**
+      - scripts/deploy-backend.sh
+      - .github/workflows/deploy-backend.yml
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
   workflow_dispatch:
 
 concurrency:
@@ -23,16 +30,37 @@ jobs:
           APP_DIR: ${{ secrets.VPS_APP_DIR || '/opt/astralmarket' }}
           SERVICE_NAME: ${{ secrets.VPS_BACKEND_SERVICE || 'astralmarket-backend' }}
         run: |
-          set -euo pipefail
+          set -Eeuo pipefail
+
+          trap 'status=$?; echo "::error::Backend deploy failed at workflow line ${LINENO}"; exit "$status"' ERR
+
+          for required_env in VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY APP_DIR SERVICE_NAME; do
+            if [[ -z "${!required_env:-}" ]]; then
+              echo "::error::Missing required deploy value: ${required_env}"
+              exit 1
+            fi
+          done
 
           mkdir -p ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/astralmarket_deploy_key
           chmod 600 ~/.ssh/astralmarket_deploy_key
-          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+          if ! ssh-keyscan -T 15 -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts; then
+            echo "::error::Unable to scan SSH host key for ${VPS_HOST}:${VPS_PORT}"
+            exit 1
+          fi
 
-          ssh -i ~/.ssh/astralmarket_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+          ssh \
+            -i ~/.ssh/astralmarket_deploy_key \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=15 \
+            -o ServerAliveCountMax=2 \
+            "$VPS_USER@$VPS_HOST" \
             "APP_DIR='$APP_DIR' SERVICE_NAME='$SERVICE_NAME' bash -s" <<'EOF'
-          set -euo pipefail
+          set -Eeuo pipefail
+
+          trap 'status=$?; echo "::error::Remote backend deploy failed at line ${LINENO}"; sudo systemctl status "$SERVICE_NAME" --no-pager -l || true; sudo journalctl -u "$SERVICE_NAME" -n 80 --no-pager || true; exit "$status"' ERR
 
           cd "$APP_DIR"
           git fetch origin main
