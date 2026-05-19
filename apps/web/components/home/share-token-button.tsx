@@ -2,7 +2,6 @@
 
 import {
   Check,
-  Copy,
   Download,
   Share2,
   X,
@@ -18,25 +17,6 @@ const fallbackCardFont = "'Poppins', Arial, sans-serif";
 const copiedResetMs = 1600;
 const maxShareCardRank = 100;
 const shareCardImage = "/assets/sharecard.jpg";
-
-const copyText = async (value: string) => {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(value);
-
-    return;
-  }
-
-  const textArea = document.createElement("textarea");
-
-  textArea.value = value;
-  textArea.setAttribute("readonly", "");
-  textArea.style.position = "fixed";
-  textArea.style.opacity = "0";
-  document.body.append(textArea);
-  textArea.select();
-  document.execCommand("copy");
-  textArea.remove();
-};
 
 const getChangeColor = (value: string) => {
   if (value.startsWith("-")) {
@@ -70,6 +50,15 @@ const getShareOrigin = () => {
   }
 
   return canonicalOrigin;
+};
+
+const getShareCardFilename = (token: BagsTableRow) => {
+  const slug = (token.symbol || token.name)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gu, "-")
+    .replace(/^-|-$/gu, "");
+
+  return `${slug || "token"}-astralmarket-share-card.png`;
 };
 
 const getCardTimestamp = () =>
@@ -420,7 +409,7 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
     const objectUrl = URL.createObjectURL(blob);
 
     link.href = objectUrl;
-    link.download = `${token.symbol || token.name}-astralmarket-share-card.png`;
+    link.download = getShareCardFilename(token);
     link.click();
     URL.revokeObjectURL(objectUrl);
   };
@@ -507,33 +496,10 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
               <>
                 <ShareCardCanvas token={token} />
 
-                <div className="mt-4">
-                  <p className="mb-2 text-xs font-semibold uppercase text-zinc-500">
-                    Public link
-                  </p>
-                  <div className="flex min-w-0 items-center gap-2 rounded-md border border-[#242424] bg-[#101010] p-2">
-                    <p className="min-w-0 flex-1 truncate px-2 font-mono text-xs text-zinc-300">
-                      {tokenUrl}
-                    </p>
-                    <button
-                      aria-label="Copy public link"
-                      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-[#1a1a1a] px-2.5 text-xs font-semibold text-zinc-100 transition-colors hover:bg-[#242424] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
-                      onClick={() => {
-                        void copyText(tokenUrl).then(() =>
-                          markCopied("Link copied"),
-                        );
-                      }}
-                      type="button"
-                    >
-                      <Copy className="size-3.5" />
-                      Copy
-                    </button>
-                  </div>
-                </div>
-
-                <div className="my-4 h-px bg-[#242424]" />
-
-                <div className="grid grid-cols-5 gap-2">
+                <p className="mb-3 mt-4 text-center text-xs font-semibold uppercase text-zinc-500">
+                  Share on:
+                </p>
+                <div className="flex flex-wrap justify-center gap-2">
                   <ShareAction label="Share on X" onClick={shareOnX}>
                     <XIcon />
                   </ShareAction>
@@ -555,7 +521,9 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
                   <ShareAction
                     label="Download share card"
                     onClick={() => {
-                      void downloadCard();
+                      void downloadCard().then(() =>
+                        markCopied("Image downloaded"),
+                      );
                     }}
                   >
                     <Download className="size-4" />
