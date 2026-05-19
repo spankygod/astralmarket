@@ -293,12 +293,16 @@ function ShareCardCanvas({
       drawWrappedText(context, token.name, 86, 358, 650, 44, 2);
 
       const change = getChangeForTimeframe(token, timeframe);
+      context.fillStyle = "#8b95a5";
+      context.font = `500 36px ${cardFont}`;
+      context.fillText(timeframe.label, 90, 420);
+
       context.fillStyle = getChangeColor(change);
       context.font = `700 88px ${cardFont}`;
       const negative = change.startsWith("-");
       const percentText = change === "-" ? timeframe.pendingLabel : change;
 
-      context.fillText(percentText, 86, 492);
+      context.fillText(percentText, 86, 510);
       context.strokeStyle = getChangeColor(change);
       if (change !== "-") {
         const arrowX = 112 + context.measureText(percentText).width;
@@ -306,13 +310,10 @@ function ShareCardCanvas({
         drawTrendArrow(
           context,
           arrowX,
-          416,
+          434,
           negative,
           1.35,
         );
-        context.fillStyle = "#8b95a5";
-        context.font = `700 42px ${cardFont}`;
-        context.fillText(timeframe.label, arrowX + 58, 482);
       }
 
       drawLabelValue(context, cardFont, "24h Volume", token.volume24h, 718);
