@@ -17,6 +17,13 @@ const fallbackCardFont = "'Poppins', Arial, sans-serif";
 const copiedResetMs = 1600;
 const maxShareCardRank = 100;
 const shareCardImage = "/assets/sharecard.jpg";
+const shareTimeframes = [
+  { key: "h1", label: "1H", pendingLabel: "1h pending", statLabel: "1h" },
+  { key: "h24", label: "24H", pendingLabel: "24h pending", statLabel: "24h" },
+  { key: "d7", label: "7D", pendingLabel: "7d pending", statLabel: "7d" },
+] as const;
+
+type ShareTimeframe = (typeof shareTimeframes)[number];
 
 const getChangeColor = (value: string) => {
   if (value.startsWith("-")) {
@@ -44,10 +51,18 @@ const getTwitterHandle = (value?: string | null) => {
   return handle ? `@${handle}` : null;
 };
 
-const getShareText = (token: BagsTableRow) => {
-  const discoverySubject = getTwitterHandle(token.twitter) ?? token.name;
+const getChangeForTimeframe = (token: BagsTableRow, timeframe: ShareTimeframe) =>
+  token[timeframe.key];
 
-  return `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover ${discoverySubject} in the @BagsApp ecosystem using Astralmarket!`;
+const getShareText = (token: BagsTableRow, timeframe: ShareTimeframe) => {
+  const discoverySubject = getTwitterHandle(token.twitter) ?? token.name;
+  const change = getChangeForTimeframe(token, timeframe);
+  const changeText =
+    change === "-"
+      ? `${timeframe.statLabel} performance is pending`
+      : `${timeframe.statLabel} performance is ${change}`;
+
+  return `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket and ${changeText}. Discover ${discoverySubject} in the @BagsApp ecosystem using Astralmarket!`;
 };
 
 const getShareOrigin = () => {
@@ -65,13 +80,16 @@ const getShareOrigin = () => {
   return canonicalOrigin;
 };
 
-const getShareCardFilename = (token: BagsTableRow) => {
+const getShareCardFilename = (
+  token: BagsTableRow,
+  timeframe: ShareTimeframe,
+) => {
   const slug = (token.symbol || token.name)
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, "-")
     .replace(/^-|-$/gu, "");
 
-  return `${slug || "token"}-astralmarket-share-card.png`;
+  return `${slug || "token"}-${timeframe.label.toLowerCase()}-astralmarket-share-card.png`;
 };
 
 const getCardTimestamp = () =>
@@ -213,8 +231,10 @@ const drawWrappedText = (
 };
 
 function ShareCardCanvas({
+  timeframe,
   token,
 }: {
+  timeframe: ShareTimeframe;
   token: BagsTableRow;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -272,20 +292,28 @@ function ShareCardCanvas({
       context.font = `34px ${cardFont}`;
       drawWrappedText(context, token.name, 86, 358, 650, 44, 2);
 
-      context.fillStyle = getChangeColor(token.h24);
+      const change = getChangeForTimeframe(token, timeframe);
+      context.fillStyle = getChangeColor(change);
       context.font = `700 88px ${cardFont}`;
-      const negative = token.h24.startsWith("-");
-      const percentText = token.h24 === "-" ? "24h pending" : token.h24;
+      const negative = change.startsWith("-");
+      const percentText = change === "-" ? timeframe.pendingLabel : change;
 
       context.fillText(percentText, 86, 492);
-      context.strokeStyle = getChangeColor(token.h24);
-      drawTrendArrow(
-        context,
-        112 + context.measureText(percentText).width,
-        416,
-        negative,
-        1.35,
-      );
+      context.strokeStyle = getChangeColor(change);
+      if (change !== "-") {
+        const arrowX = 112 + context.measureText(percentText).width;
+
+        drawTrendArrow(
+          context,
+          arrowX,
+          416,
+          negative,
+          1.35,
+        );
+        context.fillStyle = "#8b95a5";
+        context.font = `700 42px ${cardFont}`;
+        context.fillText(timeframe.label, arrowX + 58, 482);
+      }
 
       drawLabelValue(context, cardFont, "24h Volume", token.volume24h, 718);
       drawLabelValue(context, cardFont, "Market Cap", token.marketCap, 786);
@@ -300,13 +328,13 @@ function ShareCardCanvas({
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [timeframe, token]);
 
   return (
     <canvas
       aria-label={`${token.name} share card preview`}
       className="aspect-square w-full rounded-lg border border-[#222222] bg-black"
-      data-share-card={token.tokenMint}
+      data-share-card={`${token.tokenMint}-${timeframe.key}`}
       height={cardSize}
       ref={canvasRef}
       width={cardSize}
@@ -382,14 +410,20 @@ function RedditIcon() {
 
 export function ShareTokenButton({ token }: { token: BagsTableRow }) {
   const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const [selectedTimeframe, setSelectedTimeframe] =
+    useState<ShareTimeframe>(shareTimeframes[1]);
   const isShareCardEligible = token.rank <= maxShareCardRank;
   const tokenUrl = useMemo(() => {
     return `${getShareOrigin()}/coins/${encodeURIComponent(
       token.tokenMint,
     )}`;
   }, [token.tokenMint]);
-  const shareText = useMemo(() => getShareText(token), [token]);
+  const shareText = useMemo(
+    () => getShareText(token, selectedTimeframe),
+    [selectedTimeframe, token],
+  );
 
   const markCopied = (label: string) => {
     setCopiedLabel(label);
@@ -400,12 +434,12 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
     () =>
       new Promise<Blob | null>((resolve) => {
         const canvas = document.querySelector<HTMLCanvasElement>(
-          `[data-share-card="${token.tokenMint}"]`,
+          `[data-share-card="${token.tokenMint}-${selectedTimeframe.key}"]`,
         );
 
         canvas?.toBlob((blob) => resolve(blob), "image/png");
       }),
-    [token.tokenMint],
+    [selectedTimeframe.key, token.tokenMint],
   );
 
   const downloadCard = async () => {
@@ -419,7 +453,7 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
     const objectUrl = URL.createObjectURL(blob);
 
     link.href = objectUrl;
-    link.download = getShareCardFilename(token);
+    link.download = getShareCardFilename(token, selectedTimeframe);
     link.click();
     URL.revokeObjectURL(objectUrl);
   };
@@ -453,17 +487,58 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
     window.open(shareUrl.toString(), "_blank", "noopener,noreferrer");
   };
 
+  const openShareModal = (timeframe: ShareTimeframe) => {
+    setSelectedTimeframe(timeframe);
+    setMenuOpen(false);
+    setOpen(true);
+  };
+
   return (
     <>
-      <button
-        aria-label={`Share ${token.name}`}
-        className="grid size-7 place-items-center rounded-md text-zinc-300 transition-colors hover:bg-[#111111] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
-        onClick={() => setOpen(true)}
-        title="Share"
-        type="button"
+      <div
+        className="group relative inline-flex"
+        onBlurCapture={(event) => {
+          if (
+            !event.currentTarget.contains(event.relatedTarget as Node | null)
+          ) {
+            setMenuOpen(false);
+          }
+        }}
+        onFocusCapture={() => setMenuOpen(true)}
       >
-        <Share2 className="size-4" />
-      </button>
+        <button
+          aria-expanded={menuOpen}
+          aria-haspopup="menu"
+          aria-label={`Share ${token.name}`}
+          className="grid size-7 place-items-center rounded-md text-zinc-300 transition-colors hover:bg-[#111111] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500"
+          onClick={() => setMenuOpen((current) => !current)}
+          title="Share"
+          type="button"
+        >
+          <Share2 className="size-4" />
+        </button>
+
+        <div
+          className={`absolute left-0 top-8 z-30 w-32 overflow-hidden rounded-md border border-[#242424] bg-[#050505] p-1 shadow-xl transition-opacity group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100 ${
+            menuOpen
+              ? "visible opacity-100"
+              : "invisible opacity-0"
+          }`}
+          role="menu"
+        >
+          {shareTimeframes.map((timeframe) => (
+            <button
+              className="flex h-8 w-full items-center rounded px-2 text-left text-xs font-semibold text-zinc-200 transition-colors hover:bg-[#141414] hover:text-white focus-visible:bg-[#141414] focus-visible:outline-none"
+              key={timeframe.key}
+              onClick={() => openShareModal(timeframe)}
+              role="menuitem"
+              type="button"
+            >
+              Share {timeframe.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {open ? (
         <div
@@ -483,7 +558,7 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
               <div>
                 <h2 className="text-base font-semibold text-white">
                   {isShareCardEligible
-                    ? `Share ${token.symbol || token.name}`
+                    ? `Share ${token.symbol || token.name} ${selectedTimeframe.label}`
                     : "Share card unavailable"}
                 </h2>
                 <p className="mt-1 text-sm text-zinc-500">
@@ -504,7 +579,10 @@ export function ShareTokenButton({ token }: { token: BagsTableRow }) {
 
             {isShareCardEligible ? (
               <>
-                <ShareCardCanvas token={token} />
+                <ShareCardCanvas
+                  timeframe={selectedTimeframe}
+                  token={token}
+                />
 
                 <p className="mb-3 mt-4 text-center text-xs font-semibold uppercase text-zinc-500">
                   Share on:
