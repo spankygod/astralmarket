@@ -35,6 +35,7 @@ const marketItemSchema = z.object({
   name: z.string(),
   symbol: z.string(),
   image: z.string().nullable().optional(),
+  twitter: z.string().nullable().optional(),
   tokenMint: z.string(),
   metric: z.string(),
   score: z.number(),
@@ -145,6 +146,7 @@ const toMarketItem = (
     name: string;
     symbol: string;
     image?: string | null;
+    twitter?: string | null;
     tokenMint: string;
     migrationStatus: "migrated" | "dbc" | "launching";
   },
@@ -157,6 +159,7 @@ const toMarketItem = (
     name: launch.name,
     symbol: launch.symbol,
     image: launch.image,
+    twitter: launch.twitter ?? null,
     tokenMint: launch.tokenMint,
     metric: formatSignal(score),
     score,
@@ -206,7 +209,7 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
           fastify,
           {
             freshTtlSeconds: marketCacheFreshSeconds,
-            key: `bags:market:v4:limit:${limit}:page:${page}`,
+            key: `bags:market:v5:limit:${limit}:page:${page}`,
             staleTtlSeconds: marketCacheStaleSeconds,
           },
           async () => {

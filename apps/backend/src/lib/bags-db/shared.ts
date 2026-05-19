@@ -95,6 +95,7 @@ export const marketLeaderboardEntrySelect = {
   source: true,
   token: {
     select: {
+      twitter: true,
       creators: {
         select: creatorSelect,
         orderBy: [

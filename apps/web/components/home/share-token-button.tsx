@@ -30,8 +30,25 @@ const getChangeColor = (value: string) => {
   return "#22c55e";
 };
 
-const getShareText = (token: BagsTableRow) =>
-  `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover tokens in the @BagsApp ecosystem using Astralmarket!`;
+const getTwitterHandle = (value?: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  const match = trimmed.match(
+    /(?:^@|(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/)([A-Za-z0-9_]+)/iu,
+  );
+  const handle = (match?.[1] ?? trimmed.replace(/^@/u, "")).split(/[/?#]/u)[0];
+
+  return handle ? `@${handle}` : null;
+};
+
+const getShareText = (token: BagsTableRow) => {
+  const discoverySubject = getTwitterHandle(token.twitter) ?? "tokens";
+
+  return `${token.name} (${token.symbol}) is ranked #${token.rank} on @0xastralmarket. Discover ${discoverySubject} in the @BagsApp ecosystem using Astralmarket!`;
+};
 
 const getShareOrigin = () => {
   if (typeof window === "undefined") {

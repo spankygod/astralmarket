@@ -29,6 +29,7 @@ export type BagsTableRow = {
   name: string;
   symbol: string;
   image?: string | null;
+  twitter?: string | null;
   creator?: BagsMarketItem["creator"];
   badge: string;
   price: string;
@@ -126,6 +127,7 @@ export const mapLeaderboardToRows = (
       name: item.name,
       symbol: item.symbol,
       image: item.image,
+      twitter: item.twitter ?? null,
       creator: item.creator ?? null,
       badge: (item.symbol || item.name || "??").slice(0, 2).toUpperCase(),
       price: formatPrice(item.price),

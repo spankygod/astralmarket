@@ -37,6 +37,7 @@ export type BagsMarketItem = {
   name: string;
   symbol: string;
   image?: string | null;
+  twitter?: string | null;
   tokenMint: string;
   metric: string;
   score: number;
