@@ -8,7 +8,7 @@ import {
   getCachedLaunches,
   getCachedMarketStats,
 } from "../../../../lib/bags-db";
-import { withRedisCache } from "../../../../lib/redis-cache";
+import { withStaleRedisCache } from "../../../../lib/redis-cache";
 
 const poolSchema = z.object({
   tokenMint: z.string(),
@@ -63,6 +63,9 @@ const bagsCategoryResponseSchema = z.object({
   }),
 });
 
+const categoryCacheFreshSeconds = 300;
+const categoryCacheStaleSeconds = 60 * 60;
+
 const getMigrationStatus = (
   launch: { dbcPoolKey?: string | null },
   pool?: { dammV2PoolKey?: string | null } | null,
@@ -96,11 +99,12 @@ const bagsCategoryRoute: FastifyPluginAsync = async (fastify) => {
       const { limit, onlyMigrated } = request.query;
 
       try {
-        return await withRedisCache(
+        return await withStaleRedisCache(
           fastify,
           {
-            key: `bags:category:v1:limit:${limit}:onlyMigrated:${onlyMigrated}`,
-            ttlSeconds: 120,
+            freshTtlSeconds: categoryCacheFreshSeconds,
+            key: `bags:category:v2:limit:${limit}:onlyMigrated:${onlyMigrated}`,
+            staleTtlSeconds: categoryCacheStaleSeconds,
           },
           async () => {
             const cachedLaunches = await getCachedLaunches(fastify.prisma, {

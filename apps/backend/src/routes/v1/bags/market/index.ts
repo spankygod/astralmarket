@@ -15,7 +15,7 @@ import {
   formatSignal,
   getMarketSignal,
 } from "../../../../lib/bags-market";
-import { withRedisCache } from "../../../../lib/redis-cache";
+import { withStaleRedisCache } from "../../../../lib/redis-cache";
 
 const creatorSchema = z.object({
   username: z.string().nullable().optional(),
@@ -101,6 +101,8 @@ const bagsMarketResponseSchema = z.object({
 
 const bagsSignalLimit = 5;
 const cryptoNewsLimit = 10;
+const marketCacheFreshSeconds = 120;
+const marketCacheStaleSeconds = 60 * 60;
 
 const toNewsItem = (item: {
   detail: string;
@@ -200,11 +202,12 @@ const bagsMarketRoute: FastifyPluginAsync = async (fastify) => {
       const leaderboardOffset = (page - 1) * limit;
 
       try {
-        return await withRedisCache(
+        return await withStaleRedisCache(
           fastify,
           {
-            key: `bags:market:v3:limit:${limit}:page:${page}`,
-            ttlSeconds: 60,
+            freshTtlSeconds: marketCacheFreshSeconds,
+            key: `bags:market:v4:limit:${limit}:page:${page}`,
+            staleTtlSeconds: marketCacheStaleSeconds,
           },
           async () => {
             const cachedLaunches = await getCachedLaunches(fastify.prisma, {
