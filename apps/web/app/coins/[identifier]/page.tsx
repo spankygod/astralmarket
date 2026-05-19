@@ -14,7 +14,6 @@ type CoinPageProps = {
 };
 
 const siteUrl = "https://www.astralmarket.xyz";
-const fallbackShareImage = `${siteUrl}/assets/sharecard.jpg`;
 
 const getDisplaySymbol = (coin: Awaited<ReturnType<typeof fetchBagsCoin>>) => {
   if (!coin) {
@@ -52,8 +51,10 @@ export async function generateMetadata({
   const title = `${coin.token.name} (${symbol}) | Astralmarket`;
   const rankLabel = getRankLabel(coin);
   const description = `${coin.token.name} (${symbol}) is ${rankLabel} on @0xastralmarket. Discover tokens on the bags ecosystem by using the platform!`;
-  const image = coin.token.image || coin.market.dexImage || fallbackShareImage;
   const canonicalUrl = `${siteUrl}/coins/${encodeURIComponent(
+    coin.token.tokenMint,
+  )}`;
+  const image = `${siteUrl}/api/og/coins/${encodeURIComponent(
     coin.token.tokenMint,
   )}`;
 
@@ -69,7 +70,9 @@ export async function generateMetadata({
       images: [
         {
           alt: title,
+          height: 1080,
           url: image,
+          width: 1080,
         },
       ],
       siteName: "Astralmarket",
