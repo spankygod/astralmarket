@@ -1,3 +1,5 @@
+import { AsyncLocalStorage } from "node:async_hooks";
+
 import { z } from "zod";
 
 import { env } from "../config/env";
@@ -123,6 +125,26 @@ type RequestOptions = {
   query?: Record<string, boolean | number | string | undefined>;
 };
 
+export type BagsApiBudget = "background" | "user";
+
+type BagsApiBudgetState = {
+  used: number;
+  windowStartedAt: number;
+};
+
+const hourlyWindowMs = 60 * 60 * 1000;
+const bagsApiBudgetContext = new AsyncLocalStorage<BagsApiBudget>();
+const bagsApiBudgetState: Record<BagsApiBudget, BagsApiBudgetState> = {
+  background: {
+    used: 0,
+    windowStartedAt: Date.now(),
+  },
+  user: {
+    used: 0,
+    windowStartedAt: Date.now(),
+  },
+};
+
 export class BagsApiError extends Error {
   constructor(
     message: string,
@@ -131,6 +153,91 @@ export class BagsApiError extends Error {
     super(message);
   }
 }
+
+const getBudgetLimit = (budget: BagsApiBudget) =>
+  budget === "background"
+    ? env.bagsApiBackgroundHourlyLimit
+    : env.bagsApiUserHourlyLimit;
+
+const resetBudgetWindowIfExpired = (state: BagsApiBudgetState, now: number) => {
+  if (now - state.windowStartedAt < hourlyWindowMs) {
+    return;
+  }
+
+  state.used = 0;
+  state.windowStartedAt = now;
+};
+
+const reserveBagsApiRequest = (budget: BagsApiBudget, path: string) => {
+  const now = Date.now();
+  const state = bagsApiBudgetState[budget];
+
+  resetBudgetWindowIfExpired(state, now);
+
+  const limit = getBudgetLimit(budget);
+
+  if (state.used >= limit) {
+    throw new BagsApiError(
+      `Bags API ${budget} hourly budget exhausted (${state.used}/${limit}) before ${path}. ${env.bagsApiBufferHourlyLimit}/hour is reserved as buffer.`,
+      429,
+    );
+  }
+
+  state.used += 1;
+};
+
+const getCurrentBudget = () => bagsApiBudgetContext.getStore() ?? "user";
+
+export const withBagsApiBudget = <T>(
+  budget: BagsApiBudget,
+  callback: () => Promise<T>,
+) => bagsApiBudgetContext.run(budget, callback);
+
+export const getBagsApiBudgetStatus = () => {
+  const now = Date.now();
+
+  for (const state of Object.values(bagsApiBudgetState)) {
+    resetBudgetWindowIfExpired(state, now);
+  }
+
+  return {
+    background: {
+      limit: env.bagsApiBackgroundHourlyLimit,
+      remaining: Math.max(
+        env.bagsApiBackgroundHourlyLimit - bagsApiBudgetState.background.used,
+        0,
+      ),
+      used: bagsApiBudgetState.background.used,
+    },
+    buffer: {
+      limit: env.bagsApiBufferHourlyLimit,
+    },
+    total: {
+      limit: env.bagsApiHourlyLimit,
+      remaining: Math.max(
+        env.bagsApiHourlyLimit -
+          env.bagsApiBufferHourlyLimit -
+          bagsApiBudgetState.background.used -
+          bagsApiBudgetState.user.used,
+        0,
+      ),
+    },
+    user: {
+      limit: env.bagsApiUserHourlyLimit,
+      remaining: Math.max(
+        env.bagsApiUserHourlyLimit - bagsApiBudgetState.user.used,
+        0,
+      ),
+      used: bagsApiBudgetState.user.used,
+    },
+    windowResetAt: new Date(
+      Math.min(
+        bagsApiBudgetState.background.windowStartedAt,
+        bagsApiBudgetState.user.windowStartedAt,
+      ) + hourlyWindowMs,
+    ).toISOString(),
+  };
+};
 
 const request = async <T extends z.ZodTypeAny>(
   options: RequestOptions,
@@ -142,6 +249,8 @@ const request = async <T extends z.ZodTypeAny>(
       500,
     );
   }
+
+  reserveBagsApiRequest(getCurrentBudget(), options.path);
 
   const url = new URL(`${env.bagsApiBaseUrl}${options.path}`);
 

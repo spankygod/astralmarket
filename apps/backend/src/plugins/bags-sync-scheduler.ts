@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from "fastify";
 import fp from "fastify-plugin";
 
+import { withBagsApiBudget } from "../lib/bags-client";
 import { syncBagsMarket } from "../lib/bags-sync";
 
 const bagsSyncSchedulerPlugin: FastifyPluginAsync = async (fastify) => {
@@ -31,7 +32,9 @@ const bagsSyncSchedulerPlugin: FastifyPluginAsync = async (fastify) => {
         { trigger, intervalMinutes: bagsSyncIntervalMinutes },
         "Starting scheduled Bags sync",
       );
-      const result = await syncBagsMarket(fastify.prisma);
+      const result = await withBagsApiBudget("background", () =>
+        syncBagsMarket(fastify.prisma),
+      );
       fastify.log.info(
         {
           trigger,

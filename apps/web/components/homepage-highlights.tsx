@@ -330,11 +330,11 @@ export function HomepageHighlights({
   return (
     <section id="bags-overview">
       <div className="flex items-end justify-between gap-6">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-white">
             Bags Ecosystem by Market Cap
           </h1>
-          <p className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-zinc-300">
+          <p className="mt-2 text-sm leading-6 text-zinc-300">
             <span>
               The global Bags ecosystem market cap today is{" "}
               {marketCapLabel === "-" ? "not available" : marketCapLabel}
@@ -343,18 +343,18 @@ export function HomepageHighlights({
               <span>with 24h change pending.</span>
             ) : (
               <>
-                <span>, a</span>
+                <span>, a </span>
                 <span
                   className={
                     ecosystemChangeIsNegative
-                      ? "inline-flex items-center gap-1 font-semibold text-red-400"
-                      : "inline-flex items-center gap-1 font-semibold text-green-400"
+                      ? "inline-flex items-center gap-1 align-[-2px] font-semibold text-red-400"
+                      : "inline-flex items-center gap-1 align-[-2px] font-semibold text-green-400"
                   }
                 >
                   <EcosystemChangeIcon className="size-3.5" />
                   {Math.abs(ecosystemChange24h).toFixed(1)}%
                 </span>
-                <span>change in the last 24 hours.</span>
+                <span> change in the last 24 hours.</span>
               </>
             )}
           </p>

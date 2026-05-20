@@ -2,7 +2,10 @@ import type { FastifyPluginAsync } from "fastify";
 import type { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 
-import { BagsApiError } from "../../../../../lib/bags-client";
+import {
+  BagsApiError,
+  withBagsApiBudget,
+} from "../../../../../lib/bags-client";
 import { syncBagsTokenSocials } from "../../../../../lib/bags-socials";
 
 const syncSocialsResponseSchema = z.object({
@@ -46,7 +49,9 @@ const syncBagsSocialsRoute: FastifyPluginAsync = async (fastify) => {
           );
         }
 
-        const result = await syncBagsTokenSocials(fastify.prisma);
+        const result = await withBagsApiBudget("background", () =>
+          syncBagsTokenSocials(fastify.prisma),
+        );
 
         return {
           success: true as const,
